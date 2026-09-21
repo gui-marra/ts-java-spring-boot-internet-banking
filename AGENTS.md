@@ -51,7 +51,7 @@ cd internet-banking-fund-transfer-service && ./gradlew test
 cd internet-banking-utility-payment-service && ./gradlew test
 ```
 
-All current tests are plain JUnit 5 / Mockito and use H2 for persistence-layer tests; no external database is required to run the test suites.
+All current tests are plain JUnit 5 / Mockito plus `@SpringBootTest` `contextLoads` smoke tests on H2; no external database or Docker is required for `./gradlew test`. Repository and integration tests (MySQL via Testcontainers) belong to the separate `integrationTest` task described in `TESTING.md`.
 
 The testing strategy — layers, frameworks, mocking rules, integration and e2e patterns shared by every module — is defined in [`TESTING.md`](TESTING.md). New or touched tests must follow it (short form: `.agents/skills/banking-test-patterns/SKILL.md`).
 
