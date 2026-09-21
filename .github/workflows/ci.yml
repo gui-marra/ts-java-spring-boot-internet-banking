@@ -46,29 +46,3 @@ jobs:
           path: ${{ matrix.module }}/build/reports/tests/test
           if-no-files-found: ignore
 
-  devin-review:
-    name: Devin Review
-    needs: test
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Devin Review
-        env:
-          DEVIN_API_KEY: ${{ secrets.DEVIN_API_KEY }}
-          DEVIN_ORG_ID: ${{ secrets.DEVIN_ORG_ID }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          if [ -z "$DEVIN_API_KEY" ] || [ -z "$DEVIN_ORG_ID" ]; then
-            echo "::warning::DEVIN_API_KEY / DEVIN_ORG_ID secrets not set; skipping Devin Review"
-            exit 0
-          fi
-          status=$(curl -sS -o response.json -w '%{http_code}' \
-            -X POST "https://api.devin.ai/v3/organizations/${DEVIN_ORG_ID}/pr-reviews" \
-            -H "Authorization: Bearer ${DEVIN_API_KEY}" \
-            -H "Content-Type: application/json" \
-            -d "{\"pr_url\": \"${PR_URL}\"}")
-          cat response.json; echo
-          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
-            echo "::error::Devin Review request failed with HTTP $status"
-            exit 1
-          fi
