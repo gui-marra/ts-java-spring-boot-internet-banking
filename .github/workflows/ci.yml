@@ -46,3 +46,34 @@ jobs:
           path: ${{ matrix.module }}/build/reports/tests/test
           if-no-files-found: ignore
 
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports-${{ matrix.module }}
+          path: ${{ matrix.module }}/build/reports/jacoco/test
+          if-no-files-found: ignore
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          python3 - <<'EOF'
+          import os
+          import xml.etree.ElementTree as ET
+
+          path = "${{ matrix.module }}/build/reports/jacoco/test/jacocoTestReport.xml"
+          if not os.path.exists(path):
+              raise SystemExit(0)
+
+          root = ET.parse(path).getroot()
+          missed = covered = 0
+          for counter in root.findall("counter"):
+              if counter.get("type") == "LINE":
+                  missed = int(counter.get("missed"))
+                  covered = int(counter.get("covered"))
+          total = missed + covered
+          pct = (covered / total * 100) if total else 0.0
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as f:
+              f.write(f"**${{ matrix.module }}** line coverage: {pct:.1f}% ({covered}/{total})\n")
+          EOF
+

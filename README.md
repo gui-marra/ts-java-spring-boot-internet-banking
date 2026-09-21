@@ -62,6 +62,17 @@ Proceed the testings with `AUTHENTICATION` API request under BANKING_CORE_MICROS
 Test Credentials : ib_admin@javatodev.com / 5V7huE3G86uB
 ```
 
+### Test Coverage
+
+Each module uses JaCoCo for test coverage. Run tests from within a module directory:
+
+```shell
+$ cd core-banking-service
+$ ./gradlew test
+```
+
+The HTML coverage report is generated at `build/reports/jacoco/test/html/index.html` and the XML report at `build/reports/jacoco/test/jacocoTestReport.xml`. CI uploads per-module coverage report artifacts and posts a line-coverage summary on each run.
+
 ### Contribution
 
 ### Microservices Inside This Project
