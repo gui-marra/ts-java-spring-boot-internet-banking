@@ -10,10 +10,12 @@ import com.javatodev.finance.model.dto.request.FundTransferRequest;
 import com.javatodev.finance.model.dto.request.UtilityPaymentRequest;
 import com.javatodev.finance.model.entity.BankAccountEntity;
 import com.javatodev.finance.model.entity.TransactionEntity;
+import com.javatodev.finance.model.entity.UserEntity;
 import com.javatodev.finance.model.entity.UtilityAccountEntity;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 
 public final class CoreBankingFixtures {
 
@@ -25,6 +27,7 @@ public final class CoreBankingFixtures {
     public static final BigDecimal SEEDED_LOW_BALANCE = new BigDecimal("12000.00");
     public static final Long USER_ID_1 = 1L;
     public static final String USER_EMAIL_1 = "sam@gmail.com";
+    public static final String USER_IDENTIFICATION_1 = "808829932V";
     public static final Long UTILITY_PROVIDER_VODAFONE_ID = 1L;
     public static final String UTILITY_PROVIDER_VODAFONE = "VODAFONE";
     public static final String UTILITY_ACCOUNT_VODAFONE = "8203232565";
@@ -46,7 +49,7 @@ public final class CoreBankingFixtures {
         user.setFirstName("Sam");
         user.setLastName("Silva");
         user.setEmail(USER_EMAIL_1);
-        user.setIdentificationNumber("808829932V");
+        user.setIdentificationNumber(USER_IDENTIFICATION_1);
         user.setBankAccounts(Collections.emptyList());
         account.setUser(user);
         return account;
@@ -61,6 +64,28 @@ public final class CoreBankingFixtures {
         account.setAvailableBalance(BigDecimal.valueOf(balance));
         account.setActualBalance(BigDecimal.valueOf(balance));
         return account;
+    }
+
+    public static User aUser(String identificationNumber, List<BankAccount> bankAccounts) {
+        User user = new User();
+        user.setId(USER_ID_1);
+        user.setFirstName("Sam");
+        user.setLastName("Silva");
+        user.setEmail(USER_EMAIL_1);
+        user.setIdentificationNumber(identificationNumber);
+        user.setBankAccounts(bankAccounts);
+        return user;
+    }
+
+    public static UserEntity aUserEntity(String identificationNumber, List<BankAccountEntity> accounts) {
+        UserEntity user = new UserEntity();
+        user.setId(USER_ID_1);
+        user.setFirstName("Sam");
+        user.setLastName("Silva");
+        user.setEmail(USER_EMAIL_1);
+        user.setIdentificationNumber(identificationNumber);
+        user.setAccounts(accounts);
+        return user;
     }
 
     public static UtilityAccount aUtilityAccount(long id, String providerName) {
