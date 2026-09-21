@@ -83,6 +83,10 @@ test {
     finalizedBy jacocoTestReport
 }
 
+processTestResources {
+    from("$projectDir/../docker-compose/keycloak/realm-export.json") { into 'keycloak' }
+}
+
 tasks.register('integrationTest', Test) {
     description = 'Spring Boot integration tests (Testcontainers + WireMock)'
     group = 'verification'
