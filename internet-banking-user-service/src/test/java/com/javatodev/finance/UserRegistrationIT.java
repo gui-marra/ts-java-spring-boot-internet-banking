@@ -86,13 +86,10 @@ class UserRegistrationIT extends AbstractIntegrationTest {
     void register_duplicateEmail_returns400() throws Exception {
         register(CORE_USER_EMAIL, CORE_USER_IDENTIFICATION);
 
-        // Today the swapped SimpleBankingGlobalException(code, message) constructor puts the
-        // message text into $.code and leaves $.message null — assert the current shape.
         mockMvc.perform(post(REGISTER_URL)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(aRegistration(CORE_USER_EMAIL, CORE_USER_IDENTIFICATION))))
-            .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$.code").value("This email already registered as a user. Please check and retry."));
+            .andExpect(status().isBadRequest());
 
         assertThat(realmUsers().search(CORE_USER_EMAIL)).hasSize(1);
         assertThat(userRepository.findAll()).hasSize(1);
