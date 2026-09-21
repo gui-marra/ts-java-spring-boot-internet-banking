@@ -1,3 +1,5 @@
 spring:
   application:
     name: internet-banking-user-service
+  flyway:
+    baseline-on-migrate: true
