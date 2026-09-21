@@ -228,9 +228,11 @@ Only for repositories with **custom queries** (derived `findBy...`, `@Query`,
 ordering, pagination, date ranges). Plain `JpaRepository` CRUD is not tested.
 
 - Class `<Repository>IT`, `@DataJpaTest`, `@AutoConfigureTestDatabase(replace = NONE)`,
-  `@Import(MySqlTestcontainerConfig.class)` (§5.2) so it shares the same container
-  bean and cached context as the `@SpringBootTest` classes. This is what catches
-  dialect drift; H2 hides it.
+  `@Import(MySqlTestcontainerConfig.class)` (§5.2). A slice cannot share the
+  `@SpringBootTest` context (different configuration → different cache key), so a
+  module with both shapes runs **two** contexts; the container is still one
+  because `MySqlTestcontainerConfig` hands out a JVM singleton (§5.2). This is
+  what catches dialect drift; H2 hides it.
 - H2 (`spring.flyway.enabled=false`, `ddl-auto: none`, the current
   `src/test/resources/application.yml`) is kept **only** for the `contextLoads`
   smoke tests so `./gradlew test` never requires Docker. Remove
@@ -281,13 +283,16 @@ JVM singleton:
 ```java
 @TestConfiguration(proxyBeanMethods = false)
 public class MySqlTestcontainerConfig {
+    // JVM singleton so the @DataJpaTest and @SpringBootTest contexts (two cache
+    // entries) share one MySQL. Database name MUST equal the production schema:
+    // core's seed migration uses schema-qualified names
+    // (INSERT INTO banking_core_service.banking_core_user ...) and fails with
+    // "Unknown database" against Testcontainers' default `test`.
+    static final MySQLContainer<?> MYSQL =
+        new MySQLContainer<>("mysql:8.4").withDatabaseName("banking_core_service");
+
     @Bean @ServiceConnection
-    MySQLContainer<?> mysql() {
-        // Database name MUST equal the production schema: core's seed migration uses
-        // schema-qualified names (INSERT INTO banking_core_service.banking_core_user ...)
-        // and fails with "Unknown database" against Testcontainers' default `test`.
-        return new MySQLContainer<>("mysql:8.4").withDatabaseName("banking_core_service");
-    }
+    MySQLContainer<?> mysql() { return MYSQL; }   // Boot starts it once; start() is idempotent
 }
 
 public final class CoreBankingStub {                       // one per downstream, one per JVM
@@ -313,8 +318,11 @@ public abstract class AbstractIntegrationTest {
 }
 ```
 
-Boot ≥ 3.1 manages a `@ServiceConnection` container bean with the context, so it
-lives exactly as long as the cached context — one MySQL per module run. The
+Boot ≥ 3.1 starts a `@ServiceConnection` container bean with the context and
+stops it when the context closes — for cached contexts that is JVM exit, so one
+MySQL per module run even with two contexts (the caveat: if the context cache
+ever evicts — default limit 32 — the shared container is stopped under the other
+context; keep the number of distinct configurations to two). The
 database name is the module's production schema (`banking_core_service`,
 `banking_core_user_service`, `banking_core_fund_transfer_service`,
 `banking_core_utility_payment_service` — `docker-compose/mysql/privileges.sql`).
@@ -353,19 +361,22 @@ changes are marked):
 | Module | Integration tests prove |
 |---|---|
 | `core-banking-service` | Migrations apply on MySQL and `validate` passes against the entities; `POST /api/v1/transaction/fund-transfer` debits/credits both `banking_core_account` rows and writes two `banking_core_transaction` rows (negated debit) in one transaction; `InsufficientFunds` leaves balances unchanged. |
-| `fund-transfer-service`, `utility-payment-service` | `PENDING` (`PROCESSING` for payments) row is saved, core is called once with the right body (`WireMock.verify`), row moves to `SUCCESS` with the returned reference. **Failure path (current code):** on a core 4xx/5xx the `FeignException` propagates through `GlobalExceptionHandler#handleException` as HTTP `400` with a string body and the row **stays `PENDING`/`PROCESSING`** — there is no `FAILED` transition and no `CustomFeignErrorDecoder` in these two modules. Pin that the local row is not `SUCCESS` and core was called exactly once (the method is `@Transactional` around a remote call, so a late rollback would leave core debited with no local record). A `FAILED` status is a product change to implement first, then assert. |
+| `fund-transfer-service`, `utility-payment-service` | `PENDING` (`PROCESSING` for payments) row is saved, core is called once with the right body (`WireMock.verify`), row moves to `SUCCESS` with the returned reference. **Failure path (current code):** on a core 4xx/5xx the `FeignException` propagates through `GlobalExceptionHandler#handleException` as HTTP `400` with a string body and the row **stays `PENDING`/`PROCESSING`** — there is no `FAILED` transition and no `CustomFeignErrorDecoder` in these two modules. Neither service method is `@Transactional`, so the `PENDING`/`PROCESSING` row is committed by the first `save` before the remote call and survives the failure; pin that the row exists, is not `SUCCESS`, and core was called exactly once. A `FAILED` status is a product change to implement first, then assert. |
 | `user-service` | Real Keycloak via `dasniko/testcontainers-keycloak` importing `docker-compose/keycloak/realm-export.json` (it already contains the `javatodev-internet-banking-kc-api-client` service account the code uses); core-banking via WireMock. User is created in Keycloak and locally with `authId`; duplicate registration maps to `UserAlreadyRegisteredException`; core `400` is mapped by `CustomFeignErrorDecoder` into an `ErrorResponse`. WireMock is *not* used for Keycloak: `KeycloakProperties` builds a **static** admin client (`client_credentials` token endpoint + stateful search/create/get/update calls), which is impractical to stub and would pin the first port for the JVM. |
-| `api-gateway` | The gateway has **no routes in this repo** — they are `lb://` routes in the external config. The IT defines a test-local copy of the four routes (`/user/**`, `/fund-transfer/**`, `/banking-core/**`, `/utility-payment/**`, `StripPrefix=1`) with `uri: http://localhost:${wiremock.port}` (drift against the external file is an accepted risk, reviewed on config changes) — or keeps `lb://` and declares `spring.cloud.discovery.client.simple.instances.<service>[0].uri`. `WebTestClient` + `mockJwt().jwt(j -> j.subject("…"))`: forwarded request carries `X-Auth-Id == subject` (`GatewayConfiguration` uses `Principal::getName`; anonymous routes get the literal `unauthorizedUser`); no token → `401`. Fix `src/test/resources/application.yml` JWK realm from `javatodev` to `javatodev-internet-banking`. |
+| `api-gateway` | The gateway has **no routes in this repo** — they are `lb://` routes in the external config. The IT defines a test-local copy of the four routes (`/user/**`, `/fund-transfer/**`, `/banking-core/**`, `/utility-payment/**`, `StripPrefix=1` — the prefixes in the published config; the Postman collection's `/core/**` and `/payment/**` are stale, see the `banking-stack-testing` skill) with `uri: http://localhost:${wiremock.port}` (drift against the external file is an accepted risk, reviewed on config changes) — or keeps `lb://` and declares `spring.cloud.discovery.client.simple.instances.<service>[0].uri`. `WebTestClient` + `mockJwt().jwt(j -> j.subject("…"))`: forwarded request carries `X-Auth-Id == subject` (`GatewayConfiguration` uses `Principal::getName`; anonymous requests get the literal `SYSTEM USER`); no token → `401`. Fix `src/test/resources/application.yml` JWK realm from `javatodev` to `javatodev-internet-banking`. |
 | `config-server`, `service-registry` | `contextLoads` only. |
 
 **Context caching.** Keep the integration configuration identical across test
 classes (same base class, same profile, same imported `@TestConfiguration`, no
-per-class `@MockBean`/`@TestPropertySource`) so Spring starts **one** context per
-module. Test-level isolation: `CoreBankingStub.SERVER.resetAll()` in
+per-class `@MockBean`/`@TestPropertySource`) so Spring starts **one**
+`@SpringBootTest` context per module (plus one `@DataJpaTest` context where the
+module has repository tests). Test-level isolation: `CoreBankingStub.SERVER.resetAll()` in
 `@BeforeEach`, `@Sql(scripts = "/sql/clean.sql", executionPhase = BEFORE_TEST_METHOD)`
-for data, or `@Transactional` on the test class (only when the test does not
-exercise transactional boundaries itself — `TransactionService`,
-`FundTransferService` and `UtilityPaymentService` all do).
+for data, or `@Transactional` on the test class — but not for tests of
+`TransactionService` (which is `@Transactional` and whose atomicity is the point)
+nor of `FundTransferService`/`UtilityPaymentService` (which are **not**: each
+`save` commits on its own, and a test-level transaction would hide the
+committed-`PENDING`-then-remote-call sequence asserted above).
 
 ### 5.3 WireMock stubs
 

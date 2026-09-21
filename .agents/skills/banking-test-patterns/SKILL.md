@@ -72,7 +72,7 @@ used in WireMock mappings and e2e.
   utility-payment have **no Flyway**: `flyway.enabled=false`, `ddl-auto: create-drop`.
 - MySQL container: `withDatabaseName(<production schema>)` — core's seed
   migration is schema-qualified (`banking_core_service.…`) and fails on the
-  default `test` db. Container is a context-scoped `@Bean`, not `@Container static`.
+  default `test` db. Container is a JVM-singleton handed out by a `@Bean @ServiceConnection` (shared by the `@DataJpaTest` and `@SpringBootTest` contexts), not `@Container static`.
 - WireMock: one JVM-singleton `WireMockServer` per downstream, `resetAll()` in
   `@BeforeEach`; mappings in `src/test/resources/wiremock/<downstream>/mappings/*.json`
   via `usingFilesUnderClasspath`. Feign → WireMock through
@@ -81,7 +81,7 @@ used in WireMock mappings and e2e.
 - Gateway routes are not in this repo (external config, `lb://`): the IT declares
   test-local `spring.cloud.gateway.routes` to WireMock.
 - Failure paths: fund-transfer/utility-payment have no `FAILED` state and no Feign
-  error decoder — assert the row stays `PENDING`/`PROCESSING` and a `400`.
+  error decoder, and no `@Transactional` — assert the committed row stays `PENDING`/`PROCESSING` and a `400`.
 - Gradle: `integrationTest` sets `testClassesDirs`/`classpath` from
   `sourceSets.test`; **not** wired into `check`. Requires Docker; `./gradlew test`
   and `build` must keep passing without Docker (H2 smoke config stays, drop
