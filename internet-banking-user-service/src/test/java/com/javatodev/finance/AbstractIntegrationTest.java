@@ -38,6 +38,6 @@ public abstract class AbstractIntegrationTest {
 
     @BeforeEach
     void resetStubs() {
-        CoreBankingStub.SERVER.resetToDefaultMappings();
+        CoreBankingStub.SERVER.resetAll();
     }
 }
