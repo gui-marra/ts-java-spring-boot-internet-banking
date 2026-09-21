@@ -1,0 +1,23 @@
+{
+  "priority": 3,
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/v1/transaction/util-payment",
+    "bodyPatterns": [
+      {
+        "equalToJson": "{\"providerId\":1,\"amount\":250,\"account\":\"100015003000\",\"referenceNumber\":\"REF-0001\"}",
+        "ignoreExtraElements": true
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "message": "Utility Payment Successfully Processed",
+      "transactionId": "00000000-0000-0000-0000-000000000001"
+    }
+  }
+}

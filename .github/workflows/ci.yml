@@ -87,6 +87,7 @@ jobs:
         module:
           - core-banking-service
           - internet-banking-api-gateway
+          - internet-banking-utility-payment-service
     steps:
       - uses: actions/checkout@v4
 
