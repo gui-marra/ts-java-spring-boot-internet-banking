@@ -27,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,8 @@ import static com.javatodev.finance.fixture.FundTransferFixtures.aFundTransferRe
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -63,12 +66,19 @@ class FundTransferServiceTest {
             .thenAnswer(invocation -> invocation.getArgument(0));
     }
 
-    @Disabled("first save reference is mutated to SUCCESS before assertions — see issue #TBD")
     @Test
     void fundTransfer_validRequest_savesPendingThenSuccessAndReturnsResponse() {
         // Arrange
         FundTransferRequest request = aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, BigDecimal.valueOf(100));
         FundTransferResponse coreResponse = aFundTransferResponse(TRANSACTION_ID);
+        List<TransactionStatus> savedStatuses = new ArrayList<>();
+        List<String> savedReferences = new ArrayList<>();
+        doAnswer(invocation -> {
+            FundTransferEntity entity = invocation.getArgument(0);
+            savedStatuses.add(entity.getStatus());
+            savedReferences.add(entity.getTransactionReference());
+            return entity;
+        }).when(fundTransferRepository).save(any(FundTransferEntity.class));
         when(bankingCoreFeignClient.fundTransfer(request)).thenReturn(coreResponse);
 
         // Act
@@ -77,17 +87,13 @@ class FundTransferServiceTest {
         // Assert
         ArgumentCaptor<FundTransferEntity> saved = ArgumentCaptor.forClass(FundTransferEntity.class);
         verify(fundTransferRepository, times(2)).save(saved.capture());
-        FundTransferEntity pending = saved.getAllValues().get(0);
-        assertThat(pending.getStatus()).isEqualTo(TransactionStatus.PENDING);
-        assertThat(pending.getFromAccount()).isEqualTo(request.getFromAccount());
-        assertThat(pending.getToAccount()).isEqualTo(request.getToAccount());
-        assertThat(pending.getAmount()).isEqualByComparingTo(request.getAmount());
-        assertThat(pending.getTransactionReference()).isNull();
-
-        FundTransferEntity success = saved.getAllValues().get(1);
-        assertThat(success.getStatus()).isEqualTo(TransactionStatus.SUCCESS);
-        assertThat(success.getTransactionReference()).isEqualTo(TRANSACTION_ID);
-        verify(bankingCoreFeignClient).fundTransfer(org.mockito.ArgumentMatchers.same(request));
+        assertThat(savedStatuses).containsExactly(TransactionStatus.PENDING, TransactionStatus.SUCCESS);
+        assertThat(savedReferences).containsExactly(null, TRANSACTION_ID);
+        FundTransferEntity captured = saved.getAllValues().get(0);
+        assertThat(captured.getFromAccount()).isEqualTo(request.getFromAccount());
+        assertThat(captured.getToAccount()).isEqualTo(request.getToAccount());
+        assertThat(captured.getAmount()).isEqualByComparingTo(request.getAmount());
+        verify(bankingCoreFeignClient).fundTransfer(same(request));
         assertThat(response.getTransactionId()).isEqualTo(TRANSACTION_ID);
         assertThat(response.getMessage()).isEqualTo("Fund Transfer Successfully Completed");
     }
@@ -109,7 +115,6 @@ class FundTransferServiceTest {
         verify(fundTransferRepository).save(saved.capture());
         assertThat(saved.getAllValues()).allSatisfy(entity ->
             assertThat(entity.getStatus()).isEqualTo(TransactionStatus.PENDING));
-        verify(fundTransferRepository, times(1)).save(any(FundTransferEntity.class));
     }
 
     @Test
@@ -125,7 +130,6 @@ class FundTransferServiceTest {
         verify(fundTransferRepository).save(saved.capture());
         assertThat(saved.getAllValues()).allSatisfy(entity ->
             assertThat(entity.getStatus()).isEqualTo(TransactionStatus.PENDING));
-        verify(fundTransferRepository, times(1)).save(any(FundTransferEntity.class));
     }
 
     @Disabled("null transactionId from core is stored and marked SUCCESS — see issue #TBD")
