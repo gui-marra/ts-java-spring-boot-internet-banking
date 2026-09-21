@@ -15,7 +15,9 @@ application and is **not** in the per-PR CI matrix.
 
 1. Build the JARs first. Every service `Dockerfile` is runtime-only — it does
    `ADD build/libs/<module>-0.0.1-SNAPSHOT.jar app.jar` and never runs Gradle —
-   so on a clean checkout `docker compose --build` fails at that `ADD`. Run
+   so once the e2e override (step 2) adds build contexts, `docker compose --build`
+   on a clean checkout fails at that `ADD` (against the base file alone the
+   services are `image:`-only and `--build` is a no-op that pulls Docker Hub). Run
    `./gradlew bootJar -x test` in each of the seven modules (a small
    `scripts/build-all.sh` loop, or a matrix step in CI) before touching Compose.
 2. Build the stack **from the checkout**, not from published images:
@@ -71,8 +73,10 @@ is a precondition and its URLs are system properties with local defaults.
   on `availableBalance` until core is fixed; do not weaken the assertion.
 - Assert both the response (`200`, `transactionId`) **and** the effect: account
   balances via `/banking-core/api/v1/account/bank-account/{number}`; the transfer
-  record by paging `GET /fund-transfer/api/v1/transfer` (it only takes `Pageable`,
-  there is no filter) sorted by id desc and locating the row by
+  record by paging `GET /fund-transfer/api/v1/transfer?sort=id,desc` (it only
+  takes `Pageable`, there is no filter, and `readAllTransfers` → `findAll(pageable)`
+  applies **no default order** — the client must send `sort=id,desc` explicitly
+  or the new row may sit on any page) and locating the row by
   `transactionReference`; the payment record likewise via
   `GET /utility-payment/api/v1/utility-payment` by `referenceNumber` + account +
   amount (the list DTO carries no core `transactionId`).
