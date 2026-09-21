@@ -1,0 +1,12 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "/api/v1/bank-accounts/ping"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "service": "banking-core"
+    }
+  }
+}
