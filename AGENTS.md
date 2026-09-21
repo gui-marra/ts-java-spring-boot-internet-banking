@@ -53,6 +53,8 @@ cd internet-banking-utility-payment-service && ./gradlew test
 
 All current tests are plain JUnit 5 / Mockito and use H2 for persistence-layer tests; no external database is required to run the test suites.
 
+The testing strategy — layers, frameworks, mocking rules, integration and e2e patterns shared by every module — is defined in [`TESTING.md`](TESTING.md). New or touched tests must follow it (short form: `.agents/skills/banking-test-patterns/SKILL.md`).
+
 ## Verification checklist
 
 After any change, at minimum run:

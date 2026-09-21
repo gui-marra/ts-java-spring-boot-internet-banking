@@ -62,6 +62,10 @@ Proceed the testings with `AUTHENTICATION` API request under BANKING_CORE_MICROS
 Test Credentials : ib_admin@javatodev.com / 5V7huE3G86uB
 ```
 
+### Testing Strategy
+
+Test layers (unit, slice, integration, end-to-end), frameworks, and mocking conventions shared by all services are defined in [`TESTING.md`](TESTING.md).
+
 ### Test Coverage
 
 Each module uses JaCoCo for test coverage. Run tests from within a module directory:

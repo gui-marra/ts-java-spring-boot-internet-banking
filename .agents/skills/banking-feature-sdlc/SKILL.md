@@ -29,7 +29,8 @@ cd core-banking-service
 Tests are JUnit 5 + Mockito with plain constructor-wired service instances (no
 Spring context) — see `src/test/java/com/javatodev/finance/service/`. H2 is used
 for any persistence-layer tests. The verification loop is **`./gradlew test`
-green**; a compile alone is not "done."
+green**; a compile alone is not "done." Test layering, frameworks and mocking
+rules for new tests are defined in `TESTING.md` (skill: `banking-test-patterns`).
 
 ## Package layout (`com.javatodev.finance`)
 
