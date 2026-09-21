@@ -45,16 +45,19 @@ class UtilityPaymentRepositoryIT {
 
     @Test
     void findAllSortedByAmountDescending() {
-        UtilityPaymentEntity lower = entityManager.persist(aUtilityPaymentEntity(null, TransactionStatus.PENDING));
+        UtilityPaymentEntity lower = aUtilityPaymentEntity(null, TransactionStatus.PENDING);
         lower.setAmount(new BigDecimal("10.00"));
-        UtilityPaymentEntity higher = entityManager.persist(aUtilityPaymentEntity(null, TransactionStatus.SUCCESS));
+        entityManager.persist(lower);
+        UtilityPaymentEntity higher = aUtilityPaymentEntity(null, TransactionStatus.SUCCESS);
         higher.setAmount(new BigDecimal("20.00"));
+        entityManager.persist(higher);
         entityManager.flush();
 
         List<UtilityPaymentEntity> rows = repo.findAll(
             PageRequest.of(0, 10, Sort.by("amount").descending())).getContent();
 
         assertThat(rows).extracting(UtilityPaymentEntity::getAmount)
+            .usingElementComparator(BigDecimal::compareTo)
             .containsExactly(new BigDecimal("20.00"), new BigDecimal("10.00"));
     }
 

@@ -1,5 +1,6 @@
 package com.javatodev.finance;
 
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.javatodev.finance.fixture.CoreBankingFixtures;
 import com.javatodev.finance.model.TransactionStatus;
 import com.javatodev.finance.model.entity.UtilityPaymentEntity;
@@ -87,7 +88,7 @@ class UtilityPaymentIT extends AbstractIntegrationTest {
 
     @Test
     void core500() throws Exception {
-        CoreBankingWireMock.SERVER.stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlEqualTo(CORE_PAYMENT_URL))
+        CoreBankingWireMock.SERVER.stubFor(WireMock.post(urlEqualTo(CORE_PAYMENT_URL))
             .atPriority(1)
             .willReturn(aResponse().withStatus(500)));
         String requestJson = requestJson(CoreBankingFixtures.aUtilityPaymentRequest());
@@ -108,7 +109,7 @@ class UtilityPaymentIT extends AbstractIntegrationTest {
 
     @Test
     void core200MalformedBody() throws Exception {
-        CoreBankingWireMock.SERVER.stubFor(com.github.tomakehurst.wiremock.client.WireMock.post(urlEqualTo(CORE_PAYMENT_URL))
+        CoreBankingWireMock.SERVER.stubFor(WireMock.post(urlEqualTo(CORE_PAYMENT_URL))
             .atPriority(1)
             .willReturn(aResponse()
                 .withStatus(200)
