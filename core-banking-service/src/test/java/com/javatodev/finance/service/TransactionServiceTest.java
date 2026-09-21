@@ -113,7 +113,8 @@ class TransactionServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> transactionService.fundTransfer(request))
-            .isInstanceOf(InsufficientFundsException.class);
+            .isInstanceOf(InsufficientFundsException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.INSUFFICIENT_FUNDS);
 
         verifyNoInteractions(bankAccountRepository, transactionRepository);
     }
@@ -147,7 +148,8 @@ class TransactionServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> transactionService.fundTransfer(request))
-            .isInstanceOf(EntityNotFoundException.class);
+            .isInstanceOf(EntityNotFoundException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
 
         verifyNoInteractions(bankAccountRepository, transactionRepository);
     }
@@ -162,7 +164,8 @@ class TransactionServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> transactionService.fundTransfer(request))
-            .isInstanceOf(EntityNotFoundException.class);
+            .isInstanceOf(EntityNotFoundException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
 
         verify(bankAccountRepository, never()).save(any());
         verify(transactionRepository, never()).save(any());
@@ -179,7 +182,8 @@ class TransactionServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> transactionService.fundTransfer(request))
-            .isInstanceOf(InsufficientFundsException.class);
+            .isInstanceOf(InsufficientFundsException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.INSUFFICIENT_FUNDS);
 
         verifyNoInteractions(bankAccountRepository, transactionRepository);
     }
@@ -225,7 +229,8 @@ class TransactionServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> transactionService.utilPayment(request))
-            .isInstanceOf(InsufficientFundsException.class);
+            .isInstanceOf(InsufficientFundsException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.INSUFFICIENT_FUNDS);
 
         verify(accountService, never()).readUtilityAccount(any(Long.class));
         verifyNoInteractions(bankAccountRepository, transactionRepository);
@@ -242,7 +247,8 @@ class TransactionServiceTest {
 
         // Act & Assert
         assertThatThrownBy(() -> transactionService.utilPayment(request))
-            .isInstanceOf(EntityNotFoundException.class);
+            .isInstanceOf(EntityNotFoundException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
 
         verifyNoInteractions(bankAccountRepository, transactionRepository);
     }
@@ -283,7 +289,8 @@ class TransactionServiceTest {
         // Act & Assert
         assertThatThrownBy(() -> transactionService.internalFundTransfer(
             aBankAccount(ACCOUNT_NUMBER_1, 200), aBankAccount(ACCOUNT_NUMBER_2, 50), BigDecimal.valueOf(100)))
-            .isInstanceOf(EntityNotFoundException.class);
+            .isInstanceOf(EntityNotFoundException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
 
         verify(bankAccountRepository, never()).save(any());
         verify(transactionRepository, never()).save(any());
@@ -347,32 +354,4 @@ class TransactionServiceTest {
         verifyNoInteractions(bankAccountRepository, transactionRepository);
     }
 
-    @Disabled("Divergence: SimpleBankingGlobalException @AllArgsConstructor is (code, message) but subclasses call super(message, code), so code/message are swapped; tracked in Phase 1 PR")
-    @Test
-    void fundTransfer_amountExceedsBalance_exposesInsufficientFundsCode() {
-        // Arrange
-        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenReturn(aBankAccount(ACCOUNT_NUMBER_1, 200));
-        when(accountService.readBankAccount(ACCOUNT_NUMBER_2)).thenReturn(aBankAccount(ACCOUNT_NUMBER_2, 50));
-        FundTransferRequest request = aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, 300);
-
-        // Act & Assert
-        assertThatThrownBy(() -> transactionService.fundTransfer(request))
-            .isInstanceOf(InsufficientFundsException.class)
-            .extracting("code").isEqualTo(GlobalErrorCode.INSUFFICIENT_FUNDS);
-    }
-
-    @Disabled("Divergence: SimpleBankingGlobalException @AllArgsConstructor is (code, message) but subclasses call super(message, code), so code/message are swapped; tracked in Phase 1 PR")
-    @Test
-    void fundTransfer_fromEntityMissingInRepository_exposesEntityNotFoundCode() {
-        // Arrange
-        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenReturn(aBankAccount(ACCOUNT_NUMBER_1, 200));
-        when(accountService.readBankAccount(ACCOUNT_NUMBER_2)).thenReturn(aBankAccount(ACCOUNT_NUMBER_2, 50));
-        when(bankAccountRepository.findByNumber(ACCOUNT_NUMBER_1)).thenReturn(Optional.empty());
-        FundTransferRequest request = aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, 100);
-
-        // Act & Assert
-        assertThatThrownBy(() -> transactionService.fundTransfer(request))
-            .isInstanceOf(EntityNotFoundException.class)
-            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
-    }
 }
