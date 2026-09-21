@@ -1,0 +1,27 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/v1/transaction/fund-transfer",
+    "bodyPatterns": [
+      {
+        "equalToJson": {
+          "fromAccount": "100015003000",
+          "toAccount": "100015003001",
+          "amount": 50
+        },
+        "ignoreExtraElements": true,
+        "ignoreArrayOrder": true
+      }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "message": "Transaction successfully completed",
+      "transactionId": "00000000-0000-0000-0000-000000000002"
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

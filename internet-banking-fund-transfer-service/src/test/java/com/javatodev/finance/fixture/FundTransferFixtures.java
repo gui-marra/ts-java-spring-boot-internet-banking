@@ -15,6 +15,7 @@ public final class FundTransferFixtures {
     public static final String ACCOUNT_NUMBER_2 = "100015003001";
     public static final String AUTH_ID = "auth-user-0001";
     public static final String TRANSACTION_ID = "00000000-0000-0000-0000-000000000001";
+    public static final String TRANSACTION_ID_2 = "00000000-0000-0000-0000-000000000002";
 
     private FundTransferFixtures() {
     }
