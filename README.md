@@ -64,7 +64,7 @@ Test Credentials : ib_admin@javatodev.com / 5V7huE3G86uB
 
 ### Testing Strategy
 
-Test layers (unit, slice, integration, end-to-end), frameworks, and mocking conventions shared by all services are defined in [`TESTING.md`](TESTING.md).
+Test layers (unit, slice, integration, end-to-end), frameworks, and mocking conventions shared by all services are defined in [`TESTING.md`](TESTING.md), with one page per layer under [`docs/testing/`](docs/testing/).
 
 ### Test Coverage
 

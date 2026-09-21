@@ -5,13 +5,16 @@ description: >-
   which layer a test belongs to (unit / slice / integration / e2e), the
   frameworks to use (JUnit 5, AssertJ, Mockito, Spring slices, Testcontainers,
   WireMock, REST Assured) and the mocking rules. Use whenever writing or
-  reviewing tests in this repo; the full definition lives in TESTING.md.
+  reviewing tests in this repo; the full definition lives in TESTING.md and
+  docs/testing/*.md.
 ---
 
 # Skill: Write tests the repo way
 
-`TESTING.md` at the repository root is the source of truth. This skill is the
-short form for agents; when in doubt, read the relevant section there.
+`TESTING.md` at the repository root (pyramid, frameworks) plus one page per layer
+in `docs/testing/` (`unit-tests.md`, `slice-tests.md`, `integration-tests.md`,
+`e2e-tests.md`, `ci-and-adoption.md`) are the source of truth. This skill is the
+short form for agents; when in doubt, read the relevant page.
 
 ## Pick the layer first
 
@@ -85,7 +88,7 @@ used in WireMock mappings and e2e.
 - Gradle: `integrationTest` sets `testClassesDirs`/`classpath` from
   `sourceSets.test`; **not** wired into `check`. Requires Docker; `./gradlew test`
   and `build` must keep passing without Docker (H2 smoke config stays, drop
-  `H2Dialect` from the base test yml). The CI job does not exist yet — TESTING.md §9.
+  `H2Dialect` from the base test yml). The CI job does not exist yet — `docs/testing/ci-and-adoption.md`.
 
 ## E2E
 
