@@ -1,0 +1,16 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/v1/user/000000000X"
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "code": "BANKING-CORE-SERVICE-1000",
+      "message": "Requested entity not present in the DB."
+    }
+  }
+}

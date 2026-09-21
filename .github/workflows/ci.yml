@@ -89,6 +89,7 @@ jobs:
           - internet-banking-api-gateway
           - internet-banking-utility-payment-service
           - internet-banking-fund-transfer-service
+          - internet-banking-user-service
     steps:
       - uses: actions/checkout@v4
 
