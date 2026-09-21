@@ -1,0 +1,22 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none # validate fails until #10 (enum columns); Flyway owns the schema
+  flyway:
+    enabled: true
+  cloud:
+    discovery:
+      enabled: false
+eureka:
+  client:
+    enabled: false
+management:
+  tracing:
+    enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: info,health,configprops
+  info:
+    env:
+      enabled: true
