@@ -15,14 +15,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.net.URI;
 
 import static com.javatodev.finance.fixture.CoreBankingFixtures.ACCOUNT_NUMBER_1;
-import static com.javatodev.finance.fixture.CoreBankingFixtures.USER_EMAIL_1;
-import static com.javatodev.finance.fixture.CoreBankingFixtures.USER_IDENTIFICATION_1;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.UTILITY_ACCOUNT_VODAFONE;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.UTILITY_PROVIDER_VODAFONE;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.UTILITY_PROVIDER_VODAFONE_ID;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.aBankAccount;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.aUtilityAccount;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
@@ -47,7 +46,9 @@ class AccountControllerTest {
     @Test
     void getBankAccount_existingAccount_returns200WithAccountJson() throws Exception {
         // Arrange
-        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenReturn(aBankAccount(ACCOUNT_NUMBER_1, 200));
+        var account = aBankAccount(ACCOUNT_NUMBER_1, 200);
+        account.setUser(null);
+        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenReturn(account);
 
         // Act & Assert
         mockMvc.perform(get("/api/v1/account/bank-account/{account_number}", ACCOUNT_NUMBER_1))
@@ -59,11 +60,7 @@ class AccountControllerTest {
             .andExpect(jsonPath("$.status").value("ACTIVE"))
             .andExpect(jsonPath("$.availableBalance").value(200))
             .andExpect(jsonPath("$.actualBalance").value(200))
-            .andExpect(jsonPath("$.user.id").value(1))
-            .andExpect(jsonPath("$.user.firstName").value("Sam"))
-            .andExpect(jsonPath("$.user.lastName").value("Silva"))
-            .andExpect(jsonPath("$.user.email").value(USER_EMAIL_1))
-            .andExpect(jsonPath("$.user.identificationNumber").value(USER_IDENTIFICATION_1));
+            .andExpect(jsonPath("$.user").value(nullValue()));
     }
 
     @Test

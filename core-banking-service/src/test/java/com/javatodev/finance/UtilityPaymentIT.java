@@ -42,6 +42,11 @@ class UtilityPaymentIT extends AbstractIntegrationTest {
 
     @AfterEach
     void restoreSeededBalances() {
+        jdbcTemplate.update(
+            "DELETE t FROM banking_core_transaction t "
+                + "JOIN banking_core_account a ON a.id = t.account_id "
+                + "WHERE a.number IN (?, ?)",
+            ACCOUNT_NUMBER_2, ACCOUNT_NUMBER_LOW_BALANCE);
         restoreBalance(ACCOUNT_NUMBER_2, SEEDED_BALANCE);
         restoreBalance(ACCOUNT_NUMBER_LOW_BALANCE, SEEDED_LOW_BALANCE);
     }
