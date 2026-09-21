@@ -22,7 +22,7 @@ short form for agents; when in doubt, read the relevant page.
 |---|---|---|---|
 | a business rule in `service/` | plain JUnit 5 + Mockito unit test, no Spring | `<Class>Test` | `./gradlew test` |
 | an HTTP contract of a controller | `@WebMvcTest(<Controller>.class)` + `MockMvc` + `@MockBean` service | `<Controller>Test` | `./gradlew test` |
-| a custom repository query | `@DataJpaTest` + `@ActiveProfiles("integration")` + `@AutoConfigureTestDatabase(replace = NONE)` (H2 is on every module's test classpath) + `@Import(MySqlTestcontainerConfig.class)`, `@Tag("integration")` | `<Repository>IT` | `./gradlew integrationTest` |
+| a custom repository query | `@DataJpaTest` + `@ActiveProfiles("integration")` + `@AutoConfigureTestDatabase(replace = NONE)` (H2 is on the test classpath of all four persistence modules) + `@Import(MySqlTestcontainerConfig.class)`, `@Tag("integration")` | `<Repository>IT` | `./gradlew integrationTest` |
 | wiring of one whole module (migrations, Feign, filters, error mapping) | `@SpringBootTest` extending `AbstractIntegrationTest`, `@Tag("integration")` | `<Feature>IT` | `./gradlew integrationTest` |
 | a money flow through the gateway across services | REST Assured test in `e2e-tests/`, `@Tag("e2e")` | `<Flow>E2E` | nightly / manual, stack already up |
 
