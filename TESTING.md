@@ -68,7 +68,7 @@ are **not** in the BOM and are pinned explicitly, identically, in every module.
 | Spring test support | `spring-boot-test`, `spring-test` | `@WebMvcTest`, `@DataJpaTest`, `@SpringBootTest`, `MockMvc`, `WebTestClient`. |
 | Security in tests | `spring-security-test` | Gateway only (`mockJwt()` / `SecurityMockServerConfigurers`). |
 | JSON assertions | JsonPath (bundled) + `JSONassert` | `jsonPath("$.x")` in MockMvc; `JSONAssert.assertEquals` for full-body contracts. |
-| Real databases | **Testcontainers** (`org.testcontainers:mysql`, `junit-jupiter`) + `spring-boot-testcontainers` | Integration tests that must run against MySQL (dialect fidelity everywhere; Flyway fidelity in `core-banking-service`, the only module with migrations). |
+| Real databases | **Testcontainers** (`org.testcontainers:mysql`, `junit-jupiter`) + `spring-boot-testcontainers` | Integration tests that must run against MySQL (dialect fidelity everywhere; Flyway fidelity in every JPA module — core's full history, a baseline migration in user / fund-transfer / utility-payment). |
 | Real Keycloak | **Keycloak Testcontainer** (`com.github.dasniko:testcontainers-keycloak`, pinned) | `user-service` only — imports `docker-compose/keycloak/realm-export.json`; see [integration tests](docs/testing/integration-tests.md). |
 | HTTP stubbing | **WireMock** (`org.wiremock:wiremock-standalone`, pinned) | Stubs `core-banking-service` for Feign-based services and downstream routes for the gateway. |
 | HTTP client for e2e | **REST Assured** (`io.rest-assured:rest-assured`) | Only in the `e2e-tests` module. |

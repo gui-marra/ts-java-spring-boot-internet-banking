@@ -71,8 +71,9 @@ used in WireMock mappings and e2e.
   (the bootstrap context ignores `application-*.yml`; gateway already has this).
 - Profile `integration` (`application-integration.yml`): Eureka, discovery,
   tracing off, plus every property the module normally gets from the external
-  config repo. Core: Flyway on + `ddl-auto: validate`. User / fund-transfer /
-  utility-payment have **no Flyway**: `flyway.enabled=false`, `ddl-auto: create-drop`.
+  config repo. Every JPA module: Flyway on + `ddl-auto: validate` (user /
+  fund-transfer / utility-payment ship a baseline migration with
+  `baseline-on-migrate`; the IT proves it matches the entities).
 - MySQL container: `withDatabaseName(<production schema>)` — core's seed
   migration is schema-qualified (`banking_core_service.…`) and fails on the
   default `test` db. Container is a JVM-singleton handed out by a `@Bean @ServiceConnection` (shared by the `@DataJpaTest` and `@SpringBootTest` contexts), not `@Container static`.
