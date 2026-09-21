@@ -73,13 +73,13 @@ class CustomFeignErrorDecoderTest {
             .hasMessage("Common Feign Exception");
     }
 
-    @Disabled("400 with non-JSON body makes decoder return null / NPE — see issue #TBD")
+    @Disabled("400 with non-JSON body makes decoder return null / NPE — see issue #21")
     @Test
     void decode_badRequestWithNonJson_returnsException() {
         assertThat(decoder.decode("key", response(400, "not json"))).isNotNull();
     }
 
-    @Disabled("401 with no response body causes decoder NPE — see issue #TBD")
+    @Disabled("401 with no response body causes decoder NPE — see issue #21")
     @Test
     void decode_unauthorizedWithNoBody_returnsExceptionWithoutThrowing() {
         Response response = Response.builder()

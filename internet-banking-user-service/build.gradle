@@ -94,6 +94,7 @@ tasks.register('integrationTest', Test) {
     classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform { includeTags 'integration' }
     shouldRunAfter test
+    systemProperty 'api.version', '1.40'
 }
 
 jacocoTestReport {

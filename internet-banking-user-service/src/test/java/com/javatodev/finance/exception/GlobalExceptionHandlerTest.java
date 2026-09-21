@@ -26,7 +26,7 @@ class GlobalExceptionHandlerTest {
         assertThat(body.getMessage()).isEqualTo("dup");
     }
 
-    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #TBD")
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #17")
     @Test
     void handleGlobalException_subclassException_returnsExpectedErrorDetails() {
         ResponseEntity response = handler.handleGlobalException(

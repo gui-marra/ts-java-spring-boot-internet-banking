@@ -126,7 +126,7 @@ class KeycloakUserServiceTest {
             .isInstanceOf(EntityNotFoundException.class);
     }
 
-    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #TBD")
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #17")
     @Test
     void readUser_keycloakThrowsNotFound_exposesExpectedErrorDetails() {
         when(usersResource.get(AUTH_ID)).thenThrow(new ProcessingException("connection refused"));

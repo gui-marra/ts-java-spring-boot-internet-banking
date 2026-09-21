@@ -119,7 +119,7 @@ class UserControllerTest {
             .andExpect(jsonPath("$.message").isNotEmpty());
     }
 
-    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #TBD")
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #17")
     @Test
     void createUser_serviceThrowsEntityNotFound_returnsExpectedCode() throws Exception {
         when(userService.createUser(any())).thenThrow(new EntityNotFoundException());

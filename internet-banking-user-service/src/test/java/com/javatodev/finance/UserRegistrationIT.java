@@ -99,7 +99,7 @@ class UserRegistrationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("SimpleBankingGlobalException swaps code/message — see issue #TBD")
+    @Disabled("SimpleBankingGlobalException swaps code/message — see issue #17")
     void register_duplicateEmail_returns400WithErrorCode() throws Exception {
         register(CORE_USER_EMAIL, CORE_USER_IDENTIFICATION);
 

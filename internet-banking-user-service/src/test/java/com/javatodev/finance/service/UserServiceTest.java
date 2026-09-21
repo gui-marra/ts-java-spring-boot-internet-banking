@@ -116,7 +116,7 @@ class UserServiceTest {
         verifyNoInteractions(bankingCoreRestClient, userRepository);
     }
 
-    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #TBD")
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #17")
     @Test
     void createUser_duplicateEmail_exposesExpectedErrorDetails() {
         when(keycloakUserService.readUserByEmail(USER_EMAIL))
@@ -143,7 +143,7 @@ class UserServiceTest {
         verify(keycloakUserService, never()).createUser(any());
     }
 
-    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #TBD")
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #17")
     @Test
     void createUser_coreEmailMismatch_exposesExpectedErrorDetails() {
         when(keycloakUserService.readUserByEmail(USER_EMAIL)).thenReturn(List.of());
@@ -170,7 +170,7 @@ class UserServiceTest {
         verify(userRepository, never()).save(any());
     }
 
-    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #TBD")
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #17")
     @Test
     void createUser_coreUserNotFound_exposesExpectedErrorDetails() {
         when(keycloakUserService.readUserByEmail(USER_EMAIL)).thenReturn(List.of());
@@ -213,7 +213,7 @@ class UserServiceTest {
         verify(keycloakUserService, times(1)).readUserByEmail(USER_EMAIL);
     }
 
-    @Disabled("Keycloak non-201 is reported as USER-SERVICE-1003 'user not found under NIC' — see issue #TBD")
+    @Disabled("Keycloak non-201 is reported as USER-SERVICE-1003 'user not found under NIC' — see issue #18")
     @ParameterizedTest
     @ValueSource(ints = {409, 500})
     void createUser_keycloakNon201_doesNotReportInvalidBankingUser(int status) {
@@ -225,7 +225,7 @@ class UserServiceTest {
             .isNotInstanceOf(InvalidBankingUserException.class);
     }
 
-    @Disabled("NPE when core user has no email — see issue #TBD")
+    @Disabled("NPE when core user has no email — see issue #19")
     @Test
     void createUser_coreUserWithoutEmail_throwsInvalidEmail() {
         when(keycloakUserService.readUserByEmail(USER_EMAIL)).thenReturn(List.of());
@@ -235,7 +235,7 @@ class UserServiceTest {
             .isInstanceOf(InvalidEmailException.class);
     }
 
-    @Disabled("missing Bean Validation on User registration — see issue #TBD")
+    @Disabled("missing Bean Validation on User registration — see issue #20")
     @ParameterizedTest
     @ValueSource(strings = {" ", ""})
     void createUser_blankEmail_rejectsBeforeExternalInteractions(String email) {
@@ -248,7 +248,7 @@ class UserServiceTest {
         verifyNoInteractions(keycloakUserService, bankingCoreRestClient, userRepository);
     }
 
-    @Disabled("missing Bean Validation on User registration — see issue #TBD")
+    @Disabled("missing Bean Validation on User registration — see issue #20")
     @Test
     void createUser_nullEmail_rejectsBeforeExternalInteractions() {
         User request = aUser();
@@ -260,7 +260,7 @@ class UserServiceTest {
         verifyNoInteractions(keycloakUserService, bankingCoreRestClient, userRepository);
     }
 
-    @Disabled("missing Bean Validation on User registration — see issue #TBD")
+    @Disabled("missing Bean Validation on User registration — see issue #20")
     @Test
     void createUser_nullIdentification_rejectsBeforeExternalInteractions() {
         User request = aUser();
@@ -272,7 +272,7 @@ class UserServiceTest {
         verifyNoInteractions(keycloakUserService, bankingCoreRestClient, userRepository);
     }
 
-    @Disabled("missing Bean Validation on User registration — see issue #TBD")
+    @Disabled("missing Bean Validation on User registration — see issue #20")
     @Test
     void createUser_nullPassword_rejectsBeforeKeycloakCreate() {
         User request = aUser();
@@ -338,7 +338,7 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.readUser(1L)).isInstanceOf(EntityNotFoundException.class);
     }
 
-    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #TBD")
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #17")
     @Test
     void readUser_notFound_exposesExpectedErrorDetails() {
         when(userRepository.findById(1L)).thenReturn(Optional.empty());
@@ -400,7 +400,7 @@ class UserServiceTest {
         assertThat(captor.getValue().getStatus()).isEqualTo(status);
     }
 
-    @Disabled("missing Bean Validation on UserUpdateRequest.status — see issue #TBD")
+    @Disabled("missing Bean Validation on UserUpdateRequest.status — see issue #20")
     @Test
     void updateUser_nullStatus_rejectsWithoutSaving() {
         UserEntity entity = aUserEntity();
