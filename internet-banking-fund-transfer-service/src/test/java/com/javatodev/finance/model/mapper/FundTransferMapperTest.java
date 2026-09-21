@@ -63,7 +63,7 @@ class FundTransferMapperTest {
         assertThat(roundTrip.getVersion()).isEqualTo(7L);
     }
 
-    @Disabled("status not mapped enum→String by BeanUtils — see issue #TBD")
+    @Disabled("status not mapped enum→String by BeanUtils — see issue #28")
     @Test
     void convertToDto_entityStatus_preservesStatusName() {
         // Arrange
@@ -146,7 +146,7 @@ class FundTransferMapperTest {
         assertThat(two).hasSize(2);
     }
 
-    @Disabled("BeanUtils.copyProperties silently drops String→enum status — see issue #TBD")
+    @Disabled("BeanUtils.copyProperties silently drops String→enum status — see issue #28")
     @Test
     void convertToEntity_bogusStatus_rejectsStatus() {
         // Arrange

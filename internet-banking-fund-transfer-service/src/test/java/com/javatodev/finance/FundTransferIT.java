@@ -160,7 +160,7 @@ class FundTransferIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("FundTransferService marks SUCCESS even when core returns no transactionId — see issue #TBD")
+    @Disabled("FundTransferService marks SUCCESS even when core returns no transactionId — see issue #29")
     void fundTransfer_coreReturns200WithoutTransactionId_rowIsNotMarkedSuccess() throws Exception {
         // Arrange
         stubCoreFailure(aResponse().withStatus(200)
@@ -198,7 +198,7 @@ class FundTransferIT extends AbstractIntegrationTest {
 
     @Test
     @Disabled("FundTransfer.status is a String while the entity uses the TransactionStatus enum, so "
-        + "BeanUtils.copyProperties skips it and GET returns status=null — see issue #TBD")
+        + "BeanUtils.copyProperties skips it and GET returns status=null — see issue #28")
     void readFundTransfers_afterSuccessfulTransfer_exposesStatusSuccess() throws Exception {
         // Arrange
         postTransfer(100).andExpect(status().isOk());

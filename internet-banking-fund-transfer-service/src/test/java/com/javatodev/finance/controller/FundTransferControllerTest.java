@@ -292,7 +292,7 @@ class FundTransferControllerTest {
         assertThat(request.getValue().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(100));
     }
 
-    @Disabled("no Bean Validation on FundTransferRequest — see issue #TBD")
+    @Disabled("no Bean Validation on FundTransferRequest — see issue #27")
     @Test
     void sendFundTransfer_negativeAmount_returns400() throws Exception {
         // Act & Assert

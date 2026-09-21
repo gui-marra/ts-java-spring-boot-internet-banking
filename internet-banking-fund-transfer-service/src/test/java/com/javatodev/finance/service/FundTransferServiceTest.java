@@ -132,7 +132,7 @@ class FundTransferServiceTest {
             assertThat(entity.getStatus()).isEqualTo(TransactionStatus.PENDING));
     }
 
-    @Disabled("null transactionId from core is stored and marked SUCCESS — see issue #TBD")
+    @Disabled("null transactionId from core is stored and marked SUCCESS — see issue #29")
     @Test
     void fundTransfer_coreReturnsNullTransactionId_doesNotMarkSuccess() {
         // Arrange
@@ -148,61 +148,61 @@ class FundTransferServiceTest {
     @Nested
     class Validation {
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_zeroAmount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, BigDecimal.ZERO));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_negativeAmount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, BigDecimal.valueOf(-5)));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_nullAmount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, null));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_hugeAmount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, new BigDecimal("1e30")));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_sameAccounts_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_1, 100));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_nullFromAccount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(null, ACCOUNT_NUMBER_2, 100));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_blankFromAccount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(" ", ACCOUNT_NUMBER_2, 100));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_nullToAccount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(ACCOUNT_NUMBER_1, null, 100));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_blankToAccount_rejectsRequest() {
             assertInvalidRequest(aFundTransferRequest(ACCOUNT_NUMBER_1, " ", 100));
         }
 
-        @Disabled("no request validation in FundTransferService — see issue #TBD")
+        @Disabled("no request validation in FundTransferService — see issue #26")
         @Test
         void fundTransfer_nullRequest_rejectsRequest() {
             assertInvalidRequest(null);
@@ -260,7 +260,7 @@ class FundTransferServiceTest {
         verifyNoInteractions(bankingCoreFeignClient);
     }
 
-    @Disabled("status not mapped enum→String by BeanUtils — see issue #TBD")
+    @Disabled("status not mapped enum→String by BeanUtils — see issue #28")
     @Test
     void readAllTransfers_pageWithTransfers_mapsStatusNames() {
         // Arrange

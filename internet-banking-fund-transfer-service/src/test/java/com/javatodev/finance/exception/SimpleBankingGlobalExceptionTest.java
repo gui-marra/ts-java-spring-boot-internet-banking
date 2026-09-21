@@ -17,7 +17,7 @@ class SimpleBankingGlobalExceptionTest {
             .containsExactly("CODE", "msg");
     }
 
-    @Disabled("one-arg ctor leaves Lombok message field null so getMessage() returns null — see issue #TBD")
+    @Disabled("one-arg ctor leaves Lombok message field null so getMessage() returns null — see issue #30")
     @Test
     void oneArgumentConstructor_setsMessageAndLeavesCodeNull() {
         // Act
