@@ -26,6 +26,8 @@ ext {
     set('springCloudVersion', "2023.0.0")
 }
 
+ext['testcontainers.version'] = '1.21.4'
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -46,11 +48,17 @@ dependencies {
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.1.0'
 
     implementation 'com.mysql:mysql-connector-j:8.4.0'
+    implementation 'org.flywaydb:flyway-core:10.12.0'
+    implementation 'org.flywaydb:flyway-mysql:10.12.0'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.h2database:h2:2.2.224'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:mysql'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.wiremock:wiremock-standalone:3.13.1'
 }
 
 dependencyManagement {
@@ -64,8 +72,17 @@ jacoco {
 }
 
 test {
-    useJUnitPlatform()
+    useJUnitPlatform { excludeTags 'integration' }
     finalizedBy jacocoTestReport
+}
+
+tasks.register('integrationTest', Test) {
+    description = 'Spring Boot integration tests (Testcontainers + WireMock)'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform { includeTags 'integration' }
+    shouldRunAfter test
 }
 
 jacocoTestReport {

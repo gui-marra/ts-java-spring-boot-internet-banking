@@ -135,15 +135,18 @@ effect. Every module gets a `src/test/resources/bootstrap.yml` with
 **Profile per module**, `src/test/resources/application-integration.yml`. Common:
 `eureka.client.enabled=false`, `spring.cloud.discovery.enabled=false`,
 `management.tracing.enabled=false`, plus every runtime property the module
-normally receives from the external config repo (see [TESTING.md §1](../../TESTING.md#1-test-pyramid)). Persistence differs
-because **only `core-banking-service` has Flyway and migrations**; user,
-fund-transfer and utility-payment have no `flyway` dependency, no `db/migration`,
-and get their schema from `ddl-auto: update` in the external config:
+normally receives from the external config repo (see [TESTING.md §1](../../TESTING.md#1-test-pyramid)). Every
+JPA module now ships Flyway: core has its full migration history; user,
+fund-transfer and utility-payment adopted a `V1.0.<timestamp>__baseline_<module>.sql`
+mirroring their entities plus `spring.flyway.baseline-on-migrate: true` (and
+`baseline-version` pinned to that migration) so a docker database already created
+by `ddl-auto: update` is baselined instead of failing. Runtime `ddl-auto` still
+comes from the external config repo and should move to `validate` there:
 
 | Module | `spring.flyway.enabled` | `spring.jpa.hibernate.ddl-auto` | Migration fidelity |
 |---|---|---|---|
 | `core-banking-service` | `true` | `validate` | real — migrations + entity/DDL drift both caught |
-| `user`, `fund-transfer`, `utility-payment` | `false` | `create-drop` | none today; adopting Flyway in these three modules is a prerequisite |
+| `user`, `fund-transfer`, `utility-payment` | `true` | `validate` | real — baseline migration must match the entities |
 
 Per-module responsibilities (assertions describe the **current** code; intended
 changes are marked):
