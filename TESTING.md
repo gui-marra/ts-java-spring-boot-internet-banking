@@ -11,9 +11,12 @@ existing test to be rewritten immediately — new and touched tests must follow 
 | Layer | Purpose | Scope | Runs on | Speed |
 |---|---|---|---|---|
 | **Unit** | Business rules in `service/`, mappers, exception mapping | One class, collaborators mocked, no Spring context | Every PR (`./gradlew test`) | ms |
-| **Slice** | Controller contract (`@WebMvcTest`), JPA queries (`@DataJpaTest`) | One Spring layer, rest mocked | Every PR (`./gradlew test`) | < 1 s each |
-| **Integration** | One service wired end-to-end against real infra (MySQL, downstream HTTP) | Full `@SpringBootTest` for **one** module | Every PR (`./gradlew integrationTest`) | seconds |
-| **End-to-end** | Business flows through the gateway across services | Whole Docker Compose stack | Nightly / manual / pre-release | minutes |
+| **Slice** | Controller contract (`@WebMvcTest`) | One Spring layer, rest mocked | Every PR (`./gradlew test`) | < 1 s each |
+| **Integration** | JPA queries on MySQL (`@DataJpaTest`); one service wired end-to-end against real infra (MySQL, downstream HTTP) | Full `@SpringBootTest` for **one** module | Every PR (`./gradlew integrationTest`) — *target state; CI job not yet added, see §7/§9* | seconds |
+| **End-to-end** | Business flows through the gateway across services | Whole Docker Compose stack | Nightly / manual / pre-release — *target state* | minutes |
+
+`./gradlew test` must never require Docker; anything that needs Testcontainers is
+tagged `integration` and runs under `integrationTest`.
 
 Rule of thumb: push a test as far *down* the pyramid as it can go and still prove
 the behaviour. Most tests are unit tests; integration tests cover wiring
@@ -128,9 +131,9 @@ Conventions:
   money — never `equals` on `BigDecimal`.
 - No shared mutable state between tests; no `static` fixtures that get mutated.
 
-## 4. Slice tests (part of `./gradlew test`)
+## 4. Slice tests
 
-### 4.1 Controllers — `@WebMvcTest`
+### 4.1 Controllers — `@WebMvcTest` (part of `./gradlew test`)
 
 One test class per controller, `<Controller>Test`, with `@MockBean` for the
 service(s) it calls. Assert **HTTP contract only**: status, headers, JSON body,
@@ -160,7 +163,7 @@ Services that use `AppAuthUserFilter` register the filter in the slice and send
 `X-Auth-Id` in requests; assert the `ApiRequestContextHolder` value reaches the
 service via `ArgumentCaptor`.
 
-### 4.2 Repositories — `@DataJpaTest`
+### 4.2 Repositories — `@DataJpaTest` (part of `./gradlew integrationTest`)
 
 Only for repositories with **custom queries** (derived `findBy...`, `@Query`,
 ordering, pagination, date ranges). Plain `JpaRepository` CRUD is not tested.
@@ -168,7 +171,9 @@ ordering, pagination, date ranges). Plain `JpaRepository` CRUD is not tested.
 - Run against **MySQL via Testcontainers** with Flyway enabled
   (`@Testcontainers`, `@ServiceConnection MySQLContainer`,
   `@AutoConfigureTestDatabase(replace = NONE)`). This is what catches dialect and
-  migration drift; H2 hides both.
+  migration drift; H2 hides both. Because it needs Docker, the class is annotated
+  `@Tag("integration")` and named `<Repository>IT`, so it runs with the
+  integration task (§5), not with `./gradlew test`.
 - H2 (`spring.flyway.enabled=false`, `ddl-auto: none`, the current
   `src/test/resources/application.yml`) is kept **only** as the fallback used by
   the `contextLoads` smoke tests so `./gradlew test` never requires Docker.
@@ -195,6 +200,8 @@ test {
 tasks.register('integrationTest', Test) {
     description = 'Spring Boot integration tests (Testcontainers + WireMock)'
     group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform { includeTags 'integration' }
     shouldRunAfter test
 }
@@ -215,11 +222,13 @@ public abstract class AbstractIntegrationTest {
     static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4");   // one per JVM, reused across classes
 
     @RegisterExtension
-    static final WireMockExtension CORE_BANKING = WireMockExtension.newInstance().options(wireMockConfig().dynamicPort()).build();
+    static final WireMockExtension CORE_BANKING = WireMockExtension.newInstance()
+        .options(wireMockConfig().dynamicPort().usingFilesUnderClasspath("wiremock/core-banking-service"))
+        .build();
 
     @DynamicPropertySource
     static void wiremockUrls(DynamicPropertyRegistry registry) {
-        registry.add("spring.cloud.openfeign.client.config.core-banking-service.url", CORE_BANKING::baseUrl);
+        registry.add("clients.core-banking.url", CORE_BANKING::baseUrl);
     }
 }
 ```
@@ -228,8 +237,10 @@ public abstract class AbstractIntegrationTest {
 `eureka.client.enabled=false`, `spring.cloud.config.enabled=false`,
 `spring.cloud.discovery.enabled=false`, `management.tracing.enabled=false`,
 `spring.flyway.enabled=true`. Feign clients need a direct `url` for the stubbed
-service (`@FeignClient(value = "core-banking-service", url = "${clients.core-banking.url:}")`
-— empty falls back to discovery in production).
+service: `@FeignClient(value = "core-banking-service", url = "${clients.core-banking.url:}")`
+(empty falls back to Eureka discovery in production). `clients.<service>.url` is
+the **one** property name used for this in every module — set only by
+`@DynamicPropertySource` in tests, never in `application*.yml`.
 
 Per-module responsibilities:
 
@@ -252,10 +263,13 @@ transactional boundaries itself).
 
 ### 5.2 WireMock stubs
 
-Stub files live in `src/test/resources/wiremock/<downstream-service>/*.json`
-(WireMock's `mappings` format) so the same core-banking responses are reused
-across fund-transfer, utility-payment and user services. Inline `stubFor(...)`
-is fine for per-test error cases.
+Stub files live under `src/test/resources/wiremock/<downstream-service>/` using
+WireMock's root layout — `mappings/*.json` for stubs and `__files/` for response
+bodies — and each `WireMockExtension` is created with
+`usingFilesUnderClasspath("wiremock/<downstream-service>")` so the mappings are
+loaded at startup (one extension per downstream). The same core-banking mapping
+files are copied verbatim across fund-transfer, utility-payment and user
+services. Inline `stubFor(...)` is fine for per-test error cases.
 
 ### 5.3 Docker requirement
 
@@ -284,10 +298,21 @@ application and is **not** in the per-PR CI matrix.
 
 **How it runs:**
 
-1. `cd docker-compose && docker compose up -d --build` — wait until Eureka shows
-   five client registrations (see `.agents/skills/banking-stack-testing/SKILL.md`).
-2. `cd e2e-tests && ./gradlew test -Dgateway.url=http://localhost:8082 -Dkeycloak.url=http://localhost:8080`
-3. `docker compose down`.
+1. Build the stack **from the checkout**, not from published images:
+   `docker-compose/docker-compose.yml` declares the Java services with `image:`
+   only, so `docker compose up --build` would test whatever is on Docker Hub. An
+   e2e override `docker-compose/docker-compose.e2e.yml` adds a `build:` context
+   (`../<module>`) for each of the seven `javatodev/*` service images; run
+   `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build`.
+2. Wait for readiness by **name**, not by count: poll `GET http://localhost:8081/eureka/apps`
+   until `CORE-BANKING-SERVICE`, `INTERNET-BANKING-API-GATEWAY`,
+   `INTERNET-BANKING-USER-SERVICE`, `INTERNET-BANKING-FUND-TRANSFER-SERVICE` and
+   `INTERNET-BANKING-UTILITY-PAYMENT-SERVICE` are all `UP`, and Keycloak answers on
+   `:8080`. The suite's `@BeforeAll` repeats this check and fails fast with the
+   missing names.
+3. `cd e2e-tests && ./gradlew test -Dgateway.url=http://localhost:8082 -Dkeycloak.url=http://localhost:8080`
+4. `docker compose -f docker-compose.yml -f docker-compose.e2e.yml down` — always,
+   including on failure (`if: always()` in CI).
 
 The test module never starts containers itself (a `ComposeContainer` would make
 the suite own a ~2 minute startup and hide image-vs-source ambiguity); the stack
@@ -299,8 +324,10 @@ is a precondition and its URLs are system properties with local defaults.
   `AuthenticationE2E`, `FundTransferE2E`, `UtilityPaymentE2E`, `UserLifecycleE2E`.
 - Token via password grant with realm `javatodev-internet-banking`, the client
   and secret read from `docker-compose/keycloak/realm-export.json`, credentials
-  from `E2E_USERNAME` / `E2E_PASSWORD` env vars (defaults are the seeded
-  `ib_admin@javatodev.com` account). Never commit tokens or log them.
+  from the **required** `E2E_USERNAME` / `E2E_PASSWORD` env vars — the suite
+  fails fast when they are unset instead of falling back to the seeded admin
+  account. Locally, export the seeded test user from the README; in CI, provide
+  them as repository secrets. Never commit tokens or log them.
 - **Read before mutate:** every money test reads the source and destination
   balances first and asserts `before - amount == after` — never a hard-coded
   expected balance, because the compose volume persists between runs.
@@ -322,8 +349,11 @@ replaced:
 | Job | Trigger | Command |
 |---|---|---|
 | `test` (matrix) | every push/PR | `./gradlew test` — unit + slice + smoke, JaCoCo report (current). |
-| `integration-test` (matrix) | every push/PR, after `test` | `./gradlew integrationTest` — ubuntu-latest has Docker for Testcontainers. |
-| `e2e` | nightly `schedule` + `workflow_dispatch` + release tags | compose up → `e2e-tests` → compose down; upload REST Assured logs on failure. |
+| `integration-test` (matrix) — *to be added* | every push/PR, after `test` | `./gradlew integrationTest` — ubuntu-latest has Docker for Testcontainers. |
+| `e2e` — *to be added* | nightly `schedule` + `workflow_dispatch` + release tags | compose up with the e2e override (built from the checkout) → `e2e-tests` → compose down (`if: always()`); upload REST Assured logs on failure. |
+
+Until the two new jobs exist, only `./gradlew test` is enforced; the integration
+and e2e layers are the target state described in §9.
 
 Coverage thresholds (`jacocoTestCoverageVerification`) are **not** enforced yet.
 Once the `service/` packages are covered by tests following this document, add a
@@ -336,7 +366,7 @@ per module and let CI fail on regressions.
    path (`assertThatThrownBy`), boundaries (inclusive ranges, zero/negative
    amounts, empty results).
 2. `@WebMvcTest` case for every new endpoint or changed status/error mapping.
-3. `@DataJpaTest` (MySQL Testcontainers) for every new repository query.
+3. `@DataJpaTest` (MySQL Testcontainers, `@Tag("integration")`) for every new repository query.
 4. One `IT` per new cross-service interaction or migration.
 5. Extend the relevant `E2E` flow only if the change is visible through the gateway.
 6. `./gradlew test` and `./gradlew integrationTest` green in the module.
@@ -346,11 +376,12 @@ per module and let CI fail on regressions.
 This document is the target state. Recommended order to get there:
 
 1. Add `integrationTest` task + `application-integration.yml` + Testcontainers
-   / WireMock deps to `core-banking-service`; write `FundTransferIT`.
+   / WireMock deps to `core-banking-service`; write `FundTransferIT`; add the
+   `integration-test` CI job.
 2. Convert `AccountServiceTest`/`TransactionServiceTest` assertions to AssertJ
    and add `@WebMvcTest` classes for the three core controllers.
 3. Repeat step 1 for fund-transfer, utility-payment and user services (WireMock
    stubs for core-banking shared under `src/test/resources/wiremock/`).
 4. Gateway `WebTestClient` + `mockJwt()` routing tests.
-5. `e2e-tests` module + nightly workflow.
+5. `e2e-tests` module + `docker-compose.e2e.yml` build override + nightly workflow.
 6. Enable JaCoCo thresholds.

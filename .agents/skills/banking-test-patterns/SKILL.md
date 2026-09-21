@@ -19,7 +19,7 @@ short form for agents; when in doubt, read the relevant section there.
 |---|---|---|---|
 | a business rule in `service/` | plain JUnit 5 + Mockito unit test, no Spring | `<Class>Test` | `./gradlew test` |
 | an HTTP contract of a controller | `@WebMvcTest(<Controller>.class)` + `MockMvc` + `@MockBean` service | `<Controller>Test` | `./gradlew test` |
-| a custom repository query | `@DataJpaTest` on MySQL Testcontainers, Flyway on | `<Repository>Test` | `./gradlew test` |
+| a custom repository query | `@DataJpaTest` on MySQL Testcontainers, Flyway on, `@Tag("integration")` | `<Repository>IT` | `./gradlew integrationTest` |
 | wiring of one whole module (migrations, Feign, filters, error mapping) | `@SpringBootTest` extending `AbstractIntegrationTest`, `@Tag("integration")` | `<Feature>IT` | `./gradlew integrationTest` |
 | a money flow through the gateway across services | REST Assured test in `e2e-tests/`, `@Tag("e2e")` | `<Flow>E2E` | nightly / manual, stack already up |
 
@@ -54,16 +54,22 @@ fully valid objects with overridable fields (`anAccount("A1", 200)`,
 
 Profile `integration` (`src/test/resources/application-integration.yml`):
 Eureka, Config Server, tracing off; Flyway on; Feign `url` pointed at WireMock
-through `@DynamicPropertySource`. Shared WireMock mappings live in
-`src/test/resources/wiremock/<downstream>/`. Requires Docker; `./gradlew test`
-must keep passing without Docker (H2 smoke config stays).
+via `clients.<service>.url` set in `@DynamicPropertySource`. WireMock mappings
+live in `src/test/resources/wiremock/<downstream>/mappings/*.json`, loaded with
+`usingFilesUnderClasspath("wiremock/<downstream>")`. The `integrationTest` Gradle
+task must set `testClassesDirs`/`classpath` from `sourceSets.test`. Requires
+Docker; `./gradlew test` must keep passing without Docker (H2 smoke config stays).
+The `integrationTest` CI job does not exist yet — see TESTING.md §9.
 
 ## E2E
 
-Stack is a precondition (`docker-compose up`, see `banking-stack-testing`
-skill); tests never start containers. Token via Keycloak password grant, secret
-read from `docker-compose/keycloak/realm-export.json`. Read balances before
-mutating and assert `before - amount == after`; unique `referenceNumber` per run.
+Stack is a precondition, built from the checkout with the
+`docker-compose.e2e.yml` build override (see `banking-stack-testing` skill);
+tests never start containers. Wait for the five Java apps to be `UP` in Eureka
+by name. Token via Keycloak password grant, secret read from
+`docker-compose/keycloak/realm-export.json`, user from required `E2E_USERNAME` /
+`E2E_PASSWORD` (no defaults). Read balances before mutating and assert
+`before - amount == after`; unique `referenceNumber` per run.
 
 ## Done means
 
