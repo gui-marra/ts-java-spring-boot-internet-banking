@@ -26,6 +26,8 @@ ext {
     set('springCloudVersion', "2023.0.0")
 }
 
+ext['testcontainers.version'] = '1.21.3'
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -84,6 +86,7 @@ tasks.register('integrationTest', Test) {
     classpath = sourceSets.test.runtimeClasspath
     useJUnitPlatform { includeTags 'integration' }
     shouldRunAfter test
+    systemProperty 'api.version', '1.40'
 }
 
 jacocoTestReport {
