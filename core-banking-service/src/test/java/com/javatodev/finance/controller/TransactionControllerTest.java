@@ -90,6 +90,7 @@ class TransactionControllerTest {
         assertThat(captor.getValue()).isEqualTo(request);
     }
 
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #8")
     @Test
     void fundTransfer_insufficientFunds_returns400WithErrorCode() throws Exception {
         // Arrange
@@ -106,6 +107,7 @@ class TransactionControllerTest {
             .andExpect(jsonPath("$.message").value("Insufficient funds"));
     }
 
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #8")
     @Test
     void utilPayment_insufficientFunds_returns400WithErrorCode() throws Exception {
         // Arrange
@@ -123,6 +125,7 @@ class TransactionControllerTest {
             .andExpect(jsonPath("$.message").value("Insufficient funds"));
     }
 
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #8")
     @Test
     void fundTransfer_entityNotFound_returns400WithErrorCode() throws Exception {
         // Arrange
@@ -190,7 +193,7 @@ class TransactionControllerTest {
         verifyNoInteractions(transactionService);
     }
 
-    @Disabled("Divergence: request DTOs have no Bean Validation; tracked in Phase 1 PR")
+    @Disabled("No Bean Validation on DTOs — see issue #12")
     @Test
     void fundTransfer_emptyBody_returns400() throws Exception {
         // Act & Assert

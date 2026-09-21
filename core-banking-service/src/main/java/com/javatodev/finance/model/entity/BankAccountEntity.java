@@ -6,8 +6,6 @@ import com.javatodev.finance.model.AccountType;
 import java.math.BigDecimal;
 
 import jakarta.persistence.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -24,11 +22,9 @@ public class BankAccountEntity {
     private String number;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     private AccountType type;
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     private AccountStatus status;
 
     private BigDecimal availableBalance;
