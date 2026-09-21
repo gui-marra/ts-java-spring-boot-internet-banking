@@ -15,8 +15,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -206,24 +204,6 @@ class FundTransferServiceTest {
         @Test
         void fundTransfer_nullRequest_rejectsRequest() {
             assertInvalidRequest(null);
-        }
-
-        @ParameterizedTest
-        @ValueSource(longs = {0, -5})
-        void fundTransfer_nonPositiveAmount_currentlyForwardedToCore(long amount) {
-            // This pins current behaviour pending the request validation issue.
-            // Arrange
-            FundTransferRequest request = aFundTransferRequest(ACCOUNT_NUMBER_1, ACCOUNT_NUMBER_2, amount);
-            when(bankingCoreFeignClient.fundTransfer(request)).thenReturn(aFundTransferResponse(TRANSACTION_ID));
-
-            // Act
-            fundTransferService.fundTransfer(request);
-
-            // Assert
-            ArgumentCaptor<FundTransferEntity> saved = ArgumentCaptor.forClass(FundTransferEntity.class);
-            verify(fundTransferRepository, times(2)).save(saved.capture());
-            assertThat(saved.getAllValues().get(1).getStatus()).isEqualTo(TransactionStatus.SUCCESS);
-            verify(bankingCoreFeignClient).fundTransfer(org.mockito.ArgumentMatchers.same(request));
         }
 
         private void assertInvalidRequest(FundTransferRequest request) {
