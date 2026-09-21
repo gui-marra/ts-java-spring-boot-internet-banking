@@ -66,11 +66,11 @@ is a precondition and its URLs are system properties with local defaults.
   `destinationBefore + amount == destinationAfter`; a payment asserts
   `sourceBefore - amount == sourceAfter`. Never use hard-coded expected
   balances — the compose `mysqldata` volume persists between runs.
-- **Which balance:** assert `actualBalance` exactly. `availableBalance` is a known
-  divergence — `TransactionService` sets it to `actualBalance - amount` *after*
-  `actualBalance` was already reduced, so it drops by `2 × amount`. The e2e test
-  asserts the intended `before - amount` on both fields and is expected to fail
-  on `availableBalance` until core is fixed; do not weaken the assertion.
+- **Which balance:** assert both `actualBalance` and `availableBalance` move by
+  exactly `amount` (`before - amount` on the source, `before + amount` on the
+  destination). Core's `TransactionService` derives each field from its own
+  previous value; a `2 × amount` drop on `availableBalance` is a regression, not
+  expected behaviour — do not weaken the assertion.
 - Assert both the response (`200`, `transactionId`) **and** the effect: account
   balances via `/banking-core/api/v1/account/bank-account/{number}`; the transfer
   record by paging `GET /fund-transfer/api/v1/transfer?sort=id,desc` (it only
