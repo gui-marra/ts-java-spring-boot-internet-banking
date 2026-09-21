@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPath": "/api/v1/account/bank-account/100015003000"
+  },
+  "response": {
+    "status": 200,
+    "jsonBody": {
+      "id": 1,
+      "number": 100015003000,
+      "type": "SAVINGS_ACCOUNT",
+      "status": "ACTIVE",
+      "actualBalance": 100000.00,
+      "availableBalance": 100000.00
+    },
+    "headers": {
+      "Content-Type": "application/json"
+    }
+  }
+}

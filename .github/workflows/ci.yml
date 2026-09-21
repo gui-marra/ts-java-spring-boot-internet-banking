@@ -86,6 +86,7 @@ jobs:
       matrix:
         module:
           - core-banking-service
+          - internet-banking-fund-transfer-service
     steps:
       - uses: actions/checkout@v4
 
