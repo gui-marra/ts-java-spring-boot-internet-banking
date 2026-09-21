@@ -130,7 +130,7 @@ class UtilityPaymentServiceTest {
             Arguments.of(new RuntimeException("core unavailable")));
     }
 
-    @Disabled("Non-positive/null amount is accepted by the service — see issue #TBD")
+    @Disabled("Non-positive/null amount is accepted by the service — see issue #23")
     @ParameterizedTest
     @MethodSource("invalidAmounts")
     void utilPayment_invalidAmount_rejectsRequest(BigDecimal amount) {
@@ -148,7 +148,7 @@ class UtilityPaymentServiceTest {
         return Stream.of(BigDecimal.ZERO, BigDecimal.valueOf(-1), null);
     }
 
-    @Disabled("Blank/null referenceNumber is accepted by the service — see issue #TBD")
+    @Disabled("Blank/null referenceNumber is accepted by the service — see issue #23")
     @ParameterizedTest
     @MethodSource("invalidReferenceNumbers")
     void utilPayment_invalidReferenceNumber_rejectsRequest(String referenceNumber) {
@@ -167,7 +167,7 @@ class UtilityPaymentServiceTest {
         return Stream.of(" ", null);
     }
 
-    @Disabled("Blank/null account is accepted by the service — see issue #TBD")
+    @Disabled("Blank/null account is accepted by the service — see issue #23")
     @ParameterizedTest
     @MethodSource("invalidAccounts")
     void utilPayment_invalidAccount_rejectsRequest(String account) {
@@ -186,7 +186,7 @@ class UtilityPaymentServiceTest {
         return Stream.of(" ", null);
     }
 
-    @Disabled("Null providerId is accepted by the service — see issue #TBD")
+    @Disabled("Null providerId is accepted by the service — see issue #23")
     @Test
     void utilPayment_nullProviderId_rejectsRequest() {
         // Arrange

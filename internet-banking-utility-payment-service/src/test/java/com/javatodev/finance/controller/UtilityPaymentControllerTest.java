@@ -209,7 +209,7 @@ class UtilityPaymentControllerTest {
         assertThat(seen).hasValue(null);
     }
 
-    @Disabled("Amount is not validated at the API — see issue #TBD")
+    @Disabled("Amount is not validated at the API — see issue #24")
     @Test
     void processPayment_negativeAmount_rejectsRequest() throws Exception {
         // Act & Assert
@@ -222,7 +222,7 @@ class UtilityPaymentControllerTest {
         verifyNoInteractions(utilityPaymentService);
     }
 
-    @Disabled("Account is not validated at the API — see issue #TBD")
+    @Disabled("Account is not validated at the API — see issue #24")
     @Test
     void processPayment_missingAccount_rejectsRequest() throws Exception {
         // Act & Assert
