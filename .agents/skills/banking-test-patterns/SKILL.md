@@ -63,9 +63,10 @@ The `integrationTest` CI job does not exist yet — see TESTING.md §9.
 
 ## E2E
 
-Stack is a precondition, built from the checkout with the
-`docker-compose.e2e.yml` build override (see `banking-stack-testing` skill);
-tests never start containers. Wait for the five Java apps to be `UP` in Eureka
+Stack is a precondition, built from the checkout: run `./gradlew bootJar -x test`
+in all seven modules first (Dockerfiles only `ADD build/libs/*.jar`), then
+`up -d --build` with the `docker-compose.e2e.yml` build override (see
+`banking-stack-testing` skill); tests never start containers. Wait for the five Java apps to be `UP` in Eureka
 by name. Token via Keycloak password grant, secret read from
 `docker-compose/keycloak/realm-export.json`, user from required `E2E_USERNAME` /
 `E2E_PASSWORD` (no defaults). Read balances before mutating and assert

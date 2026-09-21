@@ -298,20 +298,28 @@ application and is **not** in the per-PR CI matrix.
 
 **How it runs:**
 
-1. Build the stack **from the checkout**, not from published images:
+1. Build the JARs first. Every service `Dockerfile` is runtime-only — it does
+   `ADD build/libs/<module>-0.0.1-SNAPSHOT.jar app.jar` and never runs Gradle —
+   so on a clean checkout `docker compose --build` fails at that `ADD`. Run
+   `./gradlew bootJar -x test` in each of the seven modules (a small
+   `scripts/build-all.sh` loop, or a matrix step in CI) before touching Compose.
+2. Build the stack **from the checkout**, not from published images:
    `docker-compose/docker-compose.yml` declares the Java services with `image:`
    only, so `docker compose up --build` would test whatever is on Docker Hub. An
    e2e override `docker-compose/docker-compose.e2e.yml` adds a `build:` context
    (`../<module>`) for each of the seven `javatodev/*` service images; run
    `docker compose -f docker-compose.yml -f docker-compose.e2e.yml up -d --build`.
-2. Wait for readiness by **name**, not by count: poll `GET http://localhost:8081/eureka/apps`
+   (Alternative: convert the Dockerfiles to multi-stage builds that run `bootJar`
+   themselves; then step 1 disappears. Not chosen initially — it slows every
+   image build and changes the published-image Dockerfiles.)
+3. Wait for readiness by **name**, not by count: poll `GET http://localhost:8081/eureka/apps`
    until `CORE-BANKING-SERVICE`, `INTERNET-BANKING-API-GATEWAY`,
    `INTERNET-BANKING-USER-SERVICE`, `INTERNET-BANKING-FUND-TRANSFER-SERVICE` and
    `INTERNET-BANKING-UTILITY-PAYMENT-SERVICE` are all `UP`, and Keycloak answers on
    `:8080`. The suite's `@BeforeAll` repeats this check and fails fast with the
    missing names.
-3. `cd e2e-tests && ./gradlew test -Dgateway.url=http://localhost:8082 -Dkeycloak.url=http://localhost:8080`
-4. `docker compose -f docker-compose.yml -f docker-compose.e2e.yml down` — always,
+4. `cd e2e-tests && ./gradlew test -Dgateway.url=http://localhost:8082 -Dkeycloak.url=http://localhost:8080`
+5. `docker compose -f docker-compose.yml -f docker-compose.e2e.yml down` — always,
    including on failure (`if: always()` in CI).
 
 The test module never starts containers itself (a `ComposeContainer` would make
@@ -350,7 +358,7 @@ replaced:
 |---|---|---|
 | `test` (matrix) | every push/PR | `./gradlew test` — unit + slice + smoke, JaCoCo report (current). |
 | `integration-test` (matrix) — *to be added* | every push/PR, after `test` | `./gradlew integrationTest` — ubuntu-latest has Docker for Testcontainers. |
-| `e2e` — *to be added* | nightly `schedule` + `workflow_dispatch` + release tags | compose up with the e2e override (built from the checkout) → `e2e-tests` → compose down (`if: always()`); upload REST Assured logs on failure. |
+| `e2e` — *to be added* | nightly `schedule` + `workflow_dispatch` + release tags | `bootJar` in all seven modules → compose up with the e2e override (built from the checkout) → `e2e-tests` → compose down (`if: always()`); upload REST Assured logs on failure. |
 
 Until the two new jobs exist, only `./gradlew test` is enforced; the integration
 and e2e layers are the target state described in §9.
