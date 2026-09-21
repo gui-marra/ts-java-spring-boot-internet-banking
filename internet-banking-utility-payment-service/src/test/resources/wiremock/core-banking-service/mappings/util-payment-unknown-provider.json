@@ -1,0 +1,23 @@
+{
+  "priority": 5,
+  "request": {
+    "method": "POST",
+    "urlPath": "/api/v1/transaction/util-payment",
+    "bodyPatterns": [
+      {
+        "equalToJson": "{\"providerId\":999}",
+        "ignoreExtraElements": true
+      }
+    ]
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "code": "ERROR_ENTITY_NOT_FOUND",
+      "message": "Utility account not found"
+    }
+  }
+}
