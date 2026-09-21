@@ -1,0 +1,36 @@
+spring:
+  cloud:
+    discovery:
+      enabled: false
+    gateway:
+      routes:
+        - id: user-service
+          uri: http://localhost:${wiremock.port}
+          predicates:
+            - Path=/user/**
+          filters:
+            - StripPrefix=1
+        - id: fund-transfer-service
+          uri: http://localhost:${wiremock.port}
+          predicates:
+            - Path=/fund-transfer/**
+          filters:
+            - StripPrefix=1
+        - id: banking-core-service
+          uri: http://localhost:${wiremock.port}
+          predicates:
+            - Path=/banking-core/**
+          filters:
+            - StripPrefix=1
+        - id: utility-payment-service
+          uri: http://localhost:${wiremock.port}
+          predicates:
+            - Path=/utility-payment/**
+          filters:
+            - StripPrefix=1
+eureka:
+  client:
+    enabled: false
+management:
+  tracing:
+    enabled: false
