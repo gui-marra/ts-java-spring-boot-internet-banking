@@ -5,6 +5,7 @@ import com.javatodev.finance.model.TransactionType;
 import com.javatodev.finance.model.entity.BankAccountEntity;
 import com.javatodev.finance.repository.BankAccountRepository;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +19,8 @@ import java.util.Map;
 
 import static com.javatodev.finance.fixture.CoreBankingFixtures.ACCOUNT_NUMBER_2;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.ACCOUNT_NUMBER_LOW_BALANCE;
+import static com.javatodev.finance.fixture.CoreBankingFixtures.SEEDED_BALANCE;
+import static com.javatodev.finance.fixture.CoreBankingFixtures.SEEDED_LOW_BALANCE;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.UUID_REGEX;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.aUtilityPaymentRequest;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -36,6 +39,19 @@ class UtilityPaymentIT extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @AfterEach
+    void restoreSeededBalances() {
+        restoreBalance(ACCOUNT_NUMBER_2, SEEDED_BALANCE);
+        restoreBalance(ACCOUNT_NUMBER_LOW_BALANCE, SEEDED_LOW_BALANCE);
+    }
+
+    private void restoreBalance(String number, BigDecimal balance) {
+        BankAccountEntity account = account(number);
+        account.setActualBalance(balance);
+        account.setAvailableBalance(balance);
+        bankAccountRepository.save(account);
+    }
 
     @Disabled("availableBalance 2x debited — see issue #7")
     @Test
