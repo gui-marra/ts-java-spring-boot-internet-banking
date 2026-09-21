@@ -13,7 +13,7 @@ description: >-
 
 `TESTING.md` at the repository root (pyramid, frameworks) plus one page per layer
 in `docs/testing/` (`unit-tests.md`, `slice-tests.md`, `integration-tests.md`,
-`e2e-tests.md`, `ci-and-adoption.md`) are the source of truth. This skill is the
+`e2e-tests.md`, `ci.md`) are the source of truth. This skill is the
 short form for agents; when in doubt, read the relevant page.
 
 ## Pick the layer first
@@ -88,7 +88,7 @@ used in WireMock mappings and e2e.
 - Gradle: `integrationTest` sets `testClassesDirs`/`classpath` from
   `sourceSets.test`; **not** wired into `check`. Requires Docker; `./gradlew test`
   and `build` must keep passing without Docker (H2 smoke config stays, drop
-  `H2Dialect` from the base test yml). The CI job does not exist yet — `docs/testing/ci-and-adoption.md`.
+  `H2Dialect` from the base test yml). The CI job does not exist yet — `docs/testing/ci.md`.
 
 ## E2E
 

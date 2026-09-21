@@ -15,7 +15,7 @@ choices). Each layer has its own page under `docs/testing/`:
 | [Slice tests](docs/testing/slice-tests.md) | `@WebMvcTest` controller contracts, `AppAuthUserFilter` in a slice |
 | [Integration tests](docs/testing/integration-tests.md) | `integrationTest` task, Testcontainers MySQL, WireMock, bootstrap/profile setup, per-module responsibilities, contract tests |
 | [End-to-end tests](docs/testing/e2e-tests.md) | `e2e-tests` module, compose stack, auth, balance assertions |
-| [CI, checklist & adoption](docs/testing/ci-and-adoption.md) | CI jobs, definition of done for a feature, order in which to build the infrastructure |
+| [CI & checklist](docs/testing/ci.md) | CI jobs, definition of done for a feature |
 
 Short form for agents: `.agents/skills/banking-test-patterns/SKILL.md`.
 
@@ -25,7 +25,7 @@ Short form for agents: `.agents/skills/banking-test-patterns/SKILL.md`.
 |---|---|---|---|---|
 | **Unit** | Business rules in `service/`, mappers, exception mapping | One class, collaborators mocked, no Spring context | Every PR (`./gradlew test`) | ms |
 | **Slice** | Controller contract (`@WebMvcTest`) | One Spring layer, rest mocked | Every PR (`./gradlew test`) | < 1 s each |
-| **Integration** | JPA queries on MySQL (`@DataJpaTest`); one service wired end-to-end against real infra (MySQL, downstream HTTP) | `@DataJpaTest` or full `@SpringBootTest` for **one** module | Every PR (`./gradlew integrationTest`) — *target state; CI job not yet added, see [CI & adoption](docs/testing/ci-and-adoption.md)* | seconds |
+| **Integration** | JPA queries on MySQL (`@DataJpaTest`); one service wired end-to-end against real infra (MySQL, downstream HTTP) | `@DataJpaTest` or full `@SpringBootTest` for **one** module | Every PR (`./gradlew integrationTest`) — *target state; CI job not yet added, see [CI](docs/testing/ci.md)* | seconds |
 | **End-to-end** | Business flows through the gateway across services | Whole Docker Compose stack | Nightly / manual / pre-release — *target state* | minutes |
 
 `./gradlew test` must never require Docker; anything that needs Testcontainers is

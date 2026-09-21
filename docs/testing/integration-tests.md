@@ -51,12 +51,12 @@ tasks.register('integrationTest', Test) {
 ```
 
 `integrationTest` is deliberately **not** wired into `check`: `./gradlew build`
-must stay Docker-free like `test`. CI runs `integrationTest` explicitly ([CI](ci-and-adoption.md#ci)).
+must stay Docker-free like `test`. CI runs `integrationTest` explicitly ([CI](ci.md#ci)).
 Because `jacocoTestReport` only reads `test.exec`, integration coverage is
 excluded from the report unless the module adds
 `jacocoTestReport { executionData fileTree(layout.buildDirectory).include("jacoco/*.exec") }`
 and `integrationTest { finalizedBy jacocoTestReport }` — do that only once the
-threshold in [CI](ci-and-adoption.md#ci) is enabled.
+threshold in [CI](ci.md#ci) is enabled.
 
 **Infrastructure is context-scoped, not class-scoped.** JUnit's `@Testcontainers`
 / `@Container static` and `@RegisterExtension static` start and stop per *test
@@ -138,7 +138,7 @@ and get their schema from `ddl-auto: update` in the external config:
 | Module | `spring.flyway.enabled` | `spring.jpa.hibernate.ddl-auto` | Migration fidelity |
 |---|---|---|---|
 | `core-banking-service` | `true` | `validate` | real — migrations + entity/DDL drift both caught |
-| `user`, `fund-transfer`, `utility-payment` | `false` | `create-drop` | none today; adopting Flyway in these three modules is a prerequisite ([adoption order](ci-and-adoption.md#adoption-order)) |
+| `user`, `fund-transfer`, `utility-payment` | `false` | `create-drop` | none today; adopting Flyway in these three modules is a prerequisite |
 
 Per-module responsibilities (assertions describe the **current** code; intended
 changes are marked):
