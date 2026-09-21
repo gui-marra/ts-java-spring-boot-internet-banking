@@ -6,8 +6,14 @@ import com.javatodev.finance.model.entity.UtilityPaymentEntity;
 import com.javatodev.finance.model.rest.request.UtilityPaymentRequest;
 import com.javatodev.finance.model.rest.response.UtilityPaymentResponse;
 
+import feign.FeignException;
+import feign.Request;
+import feign.Response;
+
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Map;
 
 /**
  * Cross-service ids come from core-banking-service's {@code V1.0.20210427174721__temp_data.sql};
@@ -79,5 +85,20 @@ public final class CoreBankingFixtures {
             .message("Utility Payment Successfully Processed")
             .transactionId(CORE_TRANSACTION_ID)
             .build();
+    }
+
+    public static FeignException aCoreFeignException() {
+        return FeignException.errorStatus("utilityPayment", Response.builder()
+            .status(400)
+            .reason("Bad Request")
+            .request(Request.create(
+                Request.HttpMethod.POST,
+                "/api/v1/transaction/util-payment",
+                Map.of(),
+                null,
+                StandardCharsets.UTF_8,
+                null))
+            .headers(Map.of())
+            .build());
     }
 }
