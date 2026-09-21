@@ -5,6 +5,7 @@ import com.javatodev.finance.model.TransactionType;
 import com.javatodev.finance.model.entity.BankAccountEntity;
 import com.javatodev.finance.repository.BankAccountRepository;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ import java.util.Map;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.ACCOUNT_NUMBER_1;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.ACCOUNT_NUMBER_2;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.ACCOUNT_NUMBER_LOW_BALANCE;
+import static com.javatodev.finance.fixture.CoreBankingFixtures.SEEDED_BALANCE;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.UUID_REGEX;
 import static com.javatodev.finance.fixture.CoreBankingFixtures.aFundTransferRequest;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,6 +39,12 @@ class FundTransferIT extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @AfterEach
+    void restoreSeededBalances() {
+        restoreBalance(ACCOUNT_NUMBER_1);
+        restoreBalance(ACCOUNT_NUMBER_2);
+    }
 
     @Test
     void contextStarts_flywayMigrationsApplied_seedPresent() {
@@ -134,6 +142,13 @@ class FundTransferIT extends AbstractIntegrationTest {
 
     private BankAccountEntity account(String number) {
         return bankAccountRepository.findByNumber(number).orElseThrow();
+    }
+
+    private void restoreBalance(String number) {
+        BankAccountEntity account = account(number);
+        account.setActualBalance(SEEDED_BALANCE);
+        account.setAvailableBalance(SEEDED_BALANCE);
+        bankAccountRepository.save(account);
     }
 
     private int transactionCount(String accountNumber) {
