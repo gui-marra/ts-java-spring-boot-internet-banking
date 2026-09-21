@@ -307,6 +307,98 @@ class TransactionServiceTest {
         verify(transactionRepository, never()).save(any());
     }
 
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #8")
+    @Test
+    void utilPayment_accountMissing_propagatesEntityNotFound() {
+        // Arrange
+        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenThrow(new EntityNotFoundException());
+        UtilityPaymentRequest request =
+            aUtilityPaymentRequest(ACCOUNT_NUMBER_1, UTILITY_PROVIDER_VODAFONE_ID, 40);
+
+        // Act & Assert
+        assertThatThrownBy(() -> transactionService.utilPayment(request))
+            .isInstanceOf(EntityNotFoundException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
+
+        verify(accountService, never()).readUtilityAccount(any(Long.class));
+        verifyNoInteractions(bankAccountRepository, transactionRepository);
+    }
+
+    @Disabled("availableBalance 2x debited — see issue #7")
+    @Test
+    void utilPayment_amountEqualsBalance_leavesZeroBalance() {
+        // Arrange
+        BankAccountEntity fromEntity = anAccountEntity(ACCOUNT_NUMBER_1, 100);
+        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenReturn(aBankAccount(ACCOUNT_NUMBER_1, 100));
+        when(accountService.readUtilityAccount(UTILITY_PROVIDER_VODAFONE_ID))
+            .thenReturn(aUtilityAccount(UTILITY_PROVIDER_VODAFONE_ID, UTILITY_PROVIDER_VODAFONE));
+        when(bankAccountRepository.findByNumber(ACCOUNT_NUMBER_1)).thenReturn(Optional.of(fromEntity));
+
+        // Act
+        UtilityPaymentResponse response = transactionService.utilPayment(
+            aUtilityPaymentRequest(ACCOUNT_NUMBER_1, UTILITY_PROVIDER_VODAFONE_ID, 100));
+
+        // Assert
+        assertThat(fromEntity.getActualBalance()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(fromEntity.getAvailableBalance()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(response.getTransactionId()).matches(UUID_REGEX);
+        verify(transactionRepository).save(any(TransactionEntity.class));
+    }
+
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #8")
+    @Test
+    void utilPayment_negativeSourceBalance_throwsInsufficientFunds() {
+        // Arrange
+        BankAccount from = aBankAccount(ACCOUNT_NUMBER_1, 0);
+        from.setActualBalance(BigDecimal.valueOf(-10));
+        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenReturn(from);
+        UtilityPaymentRequest request = aUtilityPaymentRequest(ACCOUNT_NUMBER_1, UTILITY_PROVIDER_VODAFONE_ID, 5);
+
+        // Act & Assert
+        assertThatThrownBy(() -> transactionService.utilPayment(request))
+            .isInstanceOf(InsufficientFundsException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.INSUFFICIENT_FUNDS);
+
+        verify(accountService, never()).readUtilityAccount(any(Long.class));
+        verifyNoInteractions(bankAccountRepository, transactionRepository);
+    }
+
+    @Disabled("Divergence: utilPayment uses Optional.get() and throws NoSuchElementException instead of EntityNotFoundException — see issue #16")
+    @Test
+    void utilPayment_accountEntityMissingInRepository_throwsEntityNotFound() {
+        // Arrange
+        when(accountService.readBankAccount(ACCOUNT_NUMBER_1)).thenReturn(aBankAccount(ACCOUNT_NUMBER_1, 100));
+        when(accountService.readUtilityAccount(UTILITY_PROVIDER_VODAFONE_ID))
+            .thenReturn(aUtilityAccount(UTILITY_PROVIDER_VODAFONE_ID, UTILITY_PROVIDER_VODAFONE));
+        when(bankAccountRepository.findByNumber(ACCOUNT_NUMBER_1)).thenReturn(Optional.empty());
+        UtilityPaymentRequest request =
+            aUtilityPaymentRequest(ACCOUNT_NUMBER_1, UTILITY_PROVIDER_VODAFONE_ID, 40);
+
+        // Act & Assert
+        assertThatThrownBy(() -> transactionService.utilPayment(request))
+            .isInstanceOf(EntityNotFoundException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
+
+        verifyNoInteractions(transactionRepository);
+    }
+
+    @Disabled("code/message swapped in SimpleBankingGlobalException — see issue #8")
+    @Test
+    void internalFundTransfer_fromEntityMissing_throwsEntityNotFound() {
+        // Arrange
+        when(bankAccountRepository.findByNumber(ACCOUNT_NUMBER_1)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> transactionService.internalFundTransfer(
+            aBankAccount(ACCOUNT_NUMBER_1, 200), aBankAccount(ACCOUNT_NUMBER_2, 50), BigDecimal.valueOf(100)))
+            .isInstanceOf(EntityNotFoundException.class)
+            .extracting("code").isEqualTo(GlobalErrorCode.ERROR_ENTITY_NOT_FOUND);
+
+        verify(bankAccountRepository, never()).findByNumber(ACCOUNT_NUMBER_2);
+        verify(bankAccountRepository, never()).save(any());
+        verifyNoInteractions(transactionRepository);
+    }
+
     @Disabled("Accepts non-positive amounts — see issue #11")
     @Test
     void fundTransfer_zeroAmount_rejectsRequest() {
