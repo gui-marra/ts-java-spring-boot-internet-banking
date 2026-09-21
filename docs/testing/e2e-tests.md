@@ -31,11 +31,16 @@ application and is **not** in the per-PR CI matrix.
    until `CORE-BANKING-SERVICE`, `INTERNET-BANKING-API-GATEWAY`,
    `INTERNET-BANKING-USER-SERVICE`, `INTERNET-BANKING-FUND-TRANSFER-SERVICE` and
    `INTERNET-BANKING-UTILITY-PAYMENT-SERVICE` are all `UP`, and Keycloak answers on
-   `:8080`. The suite's `@BeforeAll` repeats this check and fails fast with the
+   `:8080`. Five of the seven Java apps: the registry itself
+   (`register-with-eureka: false`) and the config server never appear in
+   `/eureka/apps` — they are implicitly ready once the five clients have registered
+   and pulled their config. The suite's `@BeforeAll` repeats this check and fails fast with the
    missing names.
 4. `cd e2e-tests && ./gradlew test -Dgateway.url=http://localhost:8082 -Dkeycloak.url=http://localhost:8080`
-5. `docker compose -f docker-compose.yml -f docker-compose.e2e.yml down` — always,
-   including on failure (`if: always()` in CI).
+5. `docker compose -f docker-compose.yml -f docker-compose.e2e.yml down -v` — always,
+   including on failure (`if: always()` in CI). `-v` drops `mysqldata` so every
+   automated run starts from core's seed migration (see *Fresh state* below);
+   omit `-v` locally if you want to keep the data.
 
 The test module never starts containers itself (a `ComposeContainer` would make
 the suite own a ~2 minute startup and hide image-vs-source ambiguity); the stack
@@ -54,9 +59,11 @@ is a precondition and its URLs are system properties with local defaults.
   unset instead of falling back to the seeded admin account. Locally, export the
   seeded test user from the README; in CI, provide them as repository secrets.
   Never commit tokens or log them.
-- **Read before mutate:** every money test reads the source and destination
-  balances first and asserts `before - amount == after` — never a hard-coded
-  expected balance, because the compose volume persists between runs.
+- **Read before mutate:** every money test reads the affected balances first. A
+  transfer asserts `sourceBefore - amount == sourceAfter` and
+  `destinationBefore + amount == destinationAfter`; a payment asserts
+  `sourceBefore - amount == sourceAfter`. Never use hard-coded expected
+  balances — the compose `mysqldata` volume persists between runs.
 - **Which balance:** assert `actualBalance` exactly. `availableBalance` is a known
   divergence — `TransactionService` sets it to `actualBalance - amount` *after*
   `actualBalance` was already reduced, so it drops by `2 × amount`. The e2e test
@@ -72,6 +79,11 @@ is a precondition and its URLs are system properties with local defaults.
 - Security smoke: protected `GET` without `Authorization` returns `401`.
 - Tests are independent and idempotent-enough to rerun on the same stack: use
   unique `referenceNumber`s (`UUID`) and small amounts.
+- **Fresh state per automated run.** Small amounts only delay exhaustion of the
+  seeded `100015003000` balance, so CI tears down with `docker compose ... down -v`
+  (drops `mysqldata`; core's Flyway `temp_data` migration re-seeds on the next
+  `up`). A CI run therefore always starts from the seed. Locally the volume may be
+  kept; run `down -v` when a money test starts failing with insufficient funds.
 
 The Postman collection in `postman_collection/` stays as the **manual
 exploration** tool; it is not the automated e2e suite and is not run in CI.

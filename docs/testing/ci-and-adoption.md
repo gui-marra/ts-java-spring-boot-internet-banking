@@ -11,7 +11,7 @@ replaced:
 |---|---|---|
 | `test` (matrix) | every push/PR | `./gradlew test` — unit + slice + smoke, JaCoCo report (current). |
 | `integration-test` (matrix) — *to be added* | every push/PR, after `test` | `./gradlew integrationTest` — ubuntu-latest has Docker for Testcontainers. |
-| `e2e` — *to be added* | nightly `schedule` + `workflow_dispatch` + release tags | `bootJar` in all seven modules → compose up with the e2e override (built from the checkout) → `e2e-tests` → compose down (`if: always()`); upload REST Assured logs on failure. |
+| `e2e` — *to be added* | nightly `schedule` + `workflow_dispatch` + release tags | `bootJar` in all seven modules → compose up with the e2e override (built from the checkout) → `e2e-tests` → `compose down -v` (`if: always()`, fresh seed every run); upload REST Assured logs on failure. |
 
 Until the two new jobs exist, only `./gradlew test` is enforced; the integration
 and e2e layers are the target state described in [Adoption order](#adoption-order).
@@ -38,22 +38,65 @@ per module and let CI fail on regressions.
 4. One `IT` per new cross-service interaction or migration; in core, a new
    migration must keep `ddl-auto: validate` green.
 5. Extend the relevant `E2E` flow only if the change is visible through the gateway.
-6. `./gradlew test` and `./gradlew integrationTest` green in the module.
+6. `./gradlew test` green in the module. `./gradlew integrationTest` green as
+   well once the module has the task (phase 1/2 below); until then items 3–4 do
+   not apply to that module — today no module defines `integrationTest`, so the
+   enforced gate is `test` alone.
 
 ## Adoption order
 
-This document is the target state. Recommended order to get there:
+This document is the target state. Rollout is **infrastructure first, then one
+owner per service, bottom-up inside each service** — not "all unit tests first"
+and not one owner per layer. Each module is an independent Gradle build with its
+own CI job, so service owners never block each other; the shared infrastructure
+is built once in a pilot so four owners do not invent four variants.
 
-1. Add `integrationTest` task + `src/test/resources/bootstrap.yml` +
-   `application-integration.yml` + Testcontainers / WireMock deps to
-   `core-banking-service`; write `MySqlTestcontainerConfig`,
-   `AbstractIntegrationTest`, `FundTransferIT`; add the `integration-test` CI job.
-2. Convert `AccountServiceTest`/`TransactionServiceTest` assertions to AssertJ
-   and add `@WebMvcTest` classes for the three core controllers.
-3. Repeat step 1 for fund-transfer, utility-payment and user services (WireMock
-   stubs for core-banking shared under `src/test/resources/wiremock/`; user-service
-   adds the Keycloak Testcontainer). These three run `ddl-auto: create-drop` until
-   they adopt Flyway — do that adoption before relying on them for migration fidelity.
-4. Gateway `WebTestClient` + `mockJwt()` routing tests with test-local routes.
-5. `e2e-tests` module + `docker-compose.e2e.yml` build override + nightly workflow.
-6. Enable JaCoCo thresholds (and merge `integrationTest` coverage, [integration tests](integration-tests.md#full-module--springboottest)).
+### Phase 1 — foundation in `core-banking-service` (one PR, the reference)
+
+Core is the pilot because it is the simplest place to prove the infrastructure:
+Flyway migrations, no Feign, no Keycloak.
+
+1. `integrationTest` task, Testcontainers / WireMock deps, `src/test/resources/bootstrap.yml`,
+   `application-integration.yml`, drop `H2Dialect` from the base test yml.
+2. `MySqlTestcontainerConfig`, `AbstractIntegrationTest`, `fixture/` package
+   (`CoreBankingFixtures` with the seeded account numbers).
+3. Exactly one exemplar per layer: convert `TransactionServiceTest` to AssertJ,
+   `TransactionControllerTest` (`@WebMvcTest`), `TransactionRepositoryIT`
+   (`@DataJpaTest`), `FundTransferIT` (`@SpringBootTest`).
+4. `integration-test` CI matrix job (core only at first; other modules join as
+   they land the task).
+
+Everything after this copies phase 1; review it hardest.
+
+### Phase 2 — fan out, one owner per service (parallel)
+
+`user-service`, `fund-transfer-service`, `utility-payment-service`,
+`api-gateway`. Inside a service go bottom-up so the cheap layers stabilise first:
+
+1. Unit tests for every `service/` method (happy, error, boundary).
+2. `@WebMvcTest` per controller (with the `AppAuthUserFilter` slice setup).
+3. Copy the phase-1 infrastructure; `@DataJpaTest` for custom queries; one
+   `@SpringBootTest` IT per cross-service interaction — WireMock stubs for core
+   under `src/test/resources/wiremock/core-banking-service/`, Keycloak
+   Testcontainer in user-service, test-local routes + `mockJwt()` in the gateway.
+4. Join the `integration-test` matrix.
+
+The three satellite persistence services run `ddl-auto: create-drop` until they
+adopt Flyway — do that adoption before relying on them for migration fidelity.
+Remaining core controllers/services are finished by the core owner in this phase.
+
+### Phase 3 — e2e (one owner; can start alongside phase 2)
+
+`e2e-tests` module, `docker-compose.e2e.yml` build override, nightly workflow.
+Depends only on the running stack, not on the ITs. Keep it to the money and auth
+flows (`AuthenticationE2E`, `FundTransferE2E`, `UtilityPaymentE2E`,
+`UserLifecycleE2E`).
+
+### Phase 4 — gates
+
+Enable JaCoCo thresholds (`service/` ≥ 80 % per module) and merge
+`integrationTest` coverage ([integration tests](integration-tests.md#full-module--springboottest)).
+
+**Definition of done per service:** `service/` coverage ≥ 80 %, `./gradlew test`
+still Docker-free, `integrationTest` green in CI, all new tests following the
+layer pages of this strategy.

@@ -95,11 +95,13 @@ used in WireMock mappings and e2e.
 Stack is a precondition, built from the checkout: run `./gradlew bootJar -x test`
 in all seven modules first (Dockerfiles only `ADD build/libs/*.jar`), then
 `up -d --build` with the `docker-compose.e2e.yml` build override (see
-`banking-stack-testing` skill); tests never start containers. Wait for the five Java apps to be `UP` in Eureka
-by name. Token via Keycloak password grant, secret read from
+`banking-stack-testing` skill); tests never start containers. Wait for the five Eureka clients (core, gateway, user,
+fund-transfer, utility-payment) to be `UP` in `/eureka/apps` by name — the registry
+and config server never register there. Token via Keycloak password grant, secret read from
 `docker-compose/keycloak/realm-export.json`, user from required `E2E_USERNAME` /
-`E2E_PASSWORD` (no defaults). Read balances before mutating and assert
-`before - amount == after` on `actualBalance` (`availableBalance` is double-
+`E2E_PASSWORD` (no defaults). Read balances before mutating; assert
+`sourceBefore - amount == sourceAfter` and, for transfers,
+`destinationBefore + amount == destinationAfter` on `actualBalance` (`availableBalance` is double-
 subtracted by core today — assert intended, expect red until fixed); locate
 records by paging the list endpoints (no filters exist); unique `referenceNumber`
 per run.
